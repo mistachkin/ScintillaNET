@@ -1291,21 +1291,6 @@ namespace ScintillaNET
             InitDocument(Eol.CrLf, false, 4, 0);
         }
 
-        private void InitDocument(Eol eolMode)
-        {
-            InitDocument(eolMode, false, 4, 0);
-        }
-
-        private void InitDocument(Eol eolMode, bool useTabs)
-        {
-            InitDocument(eolMode, useTabs, 4, 0);
-        }
-
-        private void InitDocument(Eol eolMode, bool useTabs, int tabWidth)
-        {
-            InitDocument(eolMode, useTabs, tabWidth, 0);
-        }
-
         private void InitDocument(Eol eolMode, bool useTabs, int tabWidth, int indentWidth)
         {
             // Document.h
