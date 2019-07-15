@@ -31,6 +31,7 @@ namespace ScintillaNET
         private bool reparent;
 
         // Static module data
+        private static string modulePath;
         private static IntPtr moduleHandle;
         private static NativeMethods.Scintilla_DirectFunction directFunction;
 
@@ -948,6 +949,9 @@ namespace ScintillaNET
 
         private static string GetModulePath()
         {
+            if (modulePath != null)
+                return modulePath;
+
             Assembly assembly = typeof(Scintilla).Assembly;
 
             string directory = (assembly != null) ?
