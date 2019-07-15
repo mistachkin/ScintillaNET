@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -30,7 +31,6 @@ namespace ScintillaNET
         private bool reparent;
 
         // Static module data
-        private static string modulePath;
         private static IntPtr moduleHandle;
         private static NativeMethods.Scintilla_DirectFunction directFunction;
 
@@ -948,70 +948,25 @@ namespace ScintillaNET
 
         private static string GetModulePath()
         {
-            // UI thread...
-            if (modulePath == null)
+            Assembly assembly = typeof(Scintilla).Assembly;
+
+            string directory = (assembly != null) ?
+                Path.GetDirectoryName(assembly.Location) : null;
+
+            if (String.IsNullOrEmpty(directory))
+                return null;
+
+            if (String.Equals(
+                    Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE"),
+                    "ARM", StringComparison.OrdinalIgnoreCase))
             {
-                // Extract the embedded SciLexer DLL
-                // http://stackoverflow.com/a/768429/2073621
-                var version = typeof(Scintilla).Assembly.GetName().Version.ToString(3);
-                modulePath = Path.Combine(Path.Combine(Path.Combine(Path.Combine(Path.GetTempPath(), "ScintillaNET"), version), (IntPtr.Size == 4 ? "x86" : "x64")), "SciLexer.dll");
-
-                if (!File.Exists(modulePath))
-                {
-                    // http://stackoverflow.com/a/229567/2073621
-                    // Synchronize access to the file across processes
-                    var guid = ((GuidAttribute)typeof(Scintilla).Assembly.GetCustomAttributes(typeof(GuidAttribute), false).GetValue(0)).Value.ToString();
-                    var name = string.Format(CultureInfo.InvariantCulture, "Global\\{{{0}}}", guid);
-                    using (var mutex = new Mutex(false, name))
-                    {
-                        var access = new MutexAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid, null), MutexRights.FullControl, AccessControlType.Allow);
-                        var security = new MutexSecurity();
-                        security.AddAccessRule(access);
-                        mutex.SetAccessControl(security);
-
-                        var ownsHandle = false;
-                        try
-                        {
-                            try
-                            {
-                                ownsHandle = mutex.WaitOne(5000, false); // 5 sec
-                                if (ownsHandle == false)
-                                {
-                                    var timeoutMessage = string.Format(CultureInfo.InvariantCulture, "Timeout waiting for exclusive access to '{0}'.", modulePath);
-                                    throw new TimeoutException(timeoutMessage);
-                                }
-                            }
-                            catch (AbandonedMutexException)
-                            {
-                                // Previous process terminated abnormally
-                                ownsHandle = true;
-                            }
-
-                            // Double-checked (process) lock
-                            if (!File.Exists(modulePath))
-                            {
-                                // Write the embedded file to disk
-                                var directory = Path.GetDirectoryName(modulePath);
-                                if (!Directory.Exists(directory))
-                                    Directory.CreateDirectory(directory);
-
-                                var resource = string.Format(CultureInfo.InvariantCulture, "ScintillaNET.{0}.SciLexer.dll.gz", (IntPtr.Size == 4 ? "x86" : "x64"));
-                                using (var resourceStream = typeof(Scintilla).Assembly.GetManifestResourceStream(resource))
-                                using (var gzipStream = new GZipStream(resourceStream, CompressionMode.Decompress))
-                                using (var fileStream = File.Create(modulePath))
-                                    gzipStream.CopyTo(fileStream);
-                            }
-                        }
-                        finally
-                        {
-                            if (ownsHandle)
-                                mutex.ReleaseMutex();
-                        }
-                    }
-                }
+                return Path.Combine(directory, "SciLexerARM.dll");
             }
 
-            return modulePath;
+            if (IntPtr.Size == sizeof(int))
+                return Path.Combine(directory, "SciLexer.dll");
+            else
+                return Path.Combine(directory, "SciLexer64.dll");
         }
 
         /// <summary>
