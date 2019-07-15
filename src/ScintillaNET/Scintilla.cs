@@ -137,7 +137,7 @@ namespace ScintillaNET
         /// <remarks>The caret position is set to the end of the inserted text, but it is not scrolled into view.</remarks>
         public unsafe void AddText(string text)
         {
-            var bytes = Helpers.GetBytes(text ?? string.Empty, Encoding, zeroTerminated: false);
+            var bytes = Helpers.GetBytes(text ?? string.Empty, Encoding, false);
             fixed (byte* bp = bytes)
                 DirectMessage(NativeMethods.SCI_ADDTEXT, new IntPtr(bytes.Length), new IntPtr(bp));
         }
@@ -157,7 +157,7 @@ namespace ScintillaNET
         /// <remarks>The current selection is not changed and the new text is not scrolled into view.</remarks>
         public unsafe void AppendText(string text)
         {
-            var bytes = Helpers.GetBytes(text ?? string.Empty, Encoding, zeroTerminated: false);
+            var bytes = Helpers.GetBytes(text ?? string.Empty, Encoding, false);
             fixed (byte* bp = bytes)
                 DirectMessage(NativeMethods.SCI_APPENDTEXT, new IntPtr(bytes.Length), new IntPtr(bp));
         }
@@ -207,7 +207,7 @@ namespace ScintillaNET
         /// <seealso cref="AutoCIgnoreCase" />
         public unsafe void AutoCSelect(string select)
         {
-            var bytes = Helpers.GetBytes(select, Encoding, zeroTerminated: true);
+            var bytes = Helpers.GetBytes(select, Encoding, true);
             fixed (byte* bp = bytes)
                 DirectMessage(NativeMethods.SCI_AUTOCSELECT, IntPtr.Zero, new IntPtr(bp));
         }
@@ -267,7 +267,7 @@ namespace ScintillaNET
                 lenEntered = (endPos - startPos);
             }
 
-            var bytes = Helpers.GetBytes(list, Encoding, zeroTerminated: true);
+            var bytes = Helpers.GetBytes(list, Encoding, true);
             fixed (byte* bp = bytes)
                 DirectMessage(NativeMethods.SCI_AUTOCSHOW, new IntPtr(lenEntered), new IntPtr(bp));
         }
@@ -279,7 +279,7 @@ namespace ScintillaNET
         /// <remarks>Characters specified should be limited to printable ASCII characters.</remarks>
         public unsafe void AutoCStops(string chars)
         {
-            var bytes = Helpers.GetBytes(chars ?? string.Empty, Encoding.ASCII, zeroTerminated: true);
+            var bytes = Helpers.GetBytes(chars ?? string.Empty, Encoding.ASCII, true);
             fixed (byte* bp = bytes)
                 DirectMessage(NativeMethods.SCI_AUTOCSTOPS, IntPtr.Zero, new IntPtr(bp));
         }
@@ -414,7 +414,7 @@ namespace ScintillaNET
 
             lastCallTip = definition;
             posStart = Lines.CharToBytePosition(posStart);
-            var bytes = Helpers.GetBytes(definition, Encoding, zeroTerminated: true);
+            var bytes = Helpers.GetBytes(definition, Encoding, true);
             fixed (byte* bp = bytes)
                 DirectMessage(NativeMethods.SCI_CALLTIPSHOW, new IntPtr(posStart), new IntPtr(bp));
         }
@@ -743,7 +743,7 @@ namespace ScintillaNET
             if (String.IsNullOrEmpty(name))
                 return String.Empty;
 
-            var nameBytes = Helpers.GetBytes(name, Encoding.ASCII, zeroTerminated: true);
+            var nameBytes = Helpers.GetBytes(name, Encoding.ASCII, true);
             fixed (byte* nb = nameBytes)
             {
                 var length = DirectMessage(NativeMethods.SCI_DESCRIBEPROPERTY, new IntPtr(nb), IntPtr.Zero).ToInt32();
@@ -1028,7 +1028,7 @@ namespace ScintillaNET
             if (String.IsNullOrEmpty(name))
                 return String.Empty;
 
-            var nameBytes = Helpers.GetBytes(name, Encoding.ASCII, zeroTerminated: true);
+            var nameBytes = Helpers.GetBytes(name, Encoding.ASCII, true);
             fixed (byte* nb = nameBytes)
             {
                 var length = DirectMessage(NativeMethods.SCI_GETPROPERTY, new IntPtr(nb)).ToInt32();
@@ -1058,7 +1058,7 @@ namespace ScintillaNET
             if (String.IsNullOrEmpty(name))
                 return String.Empty;
 
-            var nameBytes = Helpers.GetBytes(name, Encoding.ASCII, zeroTerminated: true);
+            var nameBytes = Helpers.GetBytes(name, Encoding.ASCII, true);
             fixed (byte* nb = nameBytes)
             {
                 var length = DirectMessage(NativeMethods.SCI_GETPROPERTYEXPANDED, new IntPtr(nb)).ToInt32();
@@ -1089,7 +1089,7 @@ namespace ScintillaNET
             if (String.IsNullOrEmpty(name))
                 return defaultValue;
 
-            var bytes = Helpers.GetBytes(name, Encoding.ASCII, zeroTerminated: true);
+            var bytes = Helpers.GetBytes(name, Encoding.ASCII, true);
             fixed (byte* bp = bytes)
                 return DirectMessage(NativeMethods.SCI_GETPROPERTYINT, new IntPtr(bp), new IntPtr(defaultValue)).ToInt32();
         }
@@ -1268,7 +1268,27 @@ namespace ScintillaNET
             DirectMessage(NativeMethods.SCI_INDICATORFILLRANGE, new IntPtr(startPos), new IntPtr(endPos - startPos));
         }
 
-        private void InitDocument(Eol eolMode = Eol.CrLf, bool useTabs = false, int tabWidth = 4, int indentWidth = 0)
+        private void InitDocument()
+        {
+            InitDocument(Eol.CrLf, false, 4, 0);
+        }
+
+        private void InitDocument(Eol eolMode)
+        {
+            InitDocument(eolMode, false, 4, 0);
+        }
+
+        private void InitDocument(Eol eolMode, bool useTabs)
+        {
+            InitDocument(eolMode, useTabs, 4, 0);
+        }
+
+        private void InitDocument(Eol eolMode, bool useTabs, int tabWidth)
+        {
+            InitDocument(eolMode, useTabs, tabWidth, 0);
+        }
+
+        private void InitDocument(Eol eolMode, bool useTabs, int tabWidth, int indentWidth)
         {
             // Document.h
             // These properties are stored in the Scintilla document, not the control; meaning, when
@@ -1310,7 +1330,7 @@ namespace ScintillaNET
                 position = Lines.CharToBytePosition(position);
             }
 
-            fixed (byte* bp = Helpers.GetBytes(text ?? string.Empty, Encoding, zeroTerminated: true))
+            fixed (byte* bp = Helpers.GetBytes(text ?? string.Empty, Encoding, true))
                 DirectMessage(NativeMethods.SCI_INSERTTEXT, new IntPtr(position), new IntPtr(bp));
         }
 
@@ -1374,7 +1394,7 @@ namespace ScintillaNET
             if (String.IsNullOrEmpty(path))
                 return;
 
-            var bytes = Helpers.GetBytes(path, Encoding.Default, zeroTerminated: true);
+            var bytes = Helpers.GetBytes(path, Encoding.Default, true);
             fixed (byte* bp = bytes)
                 DirectMessage(NativeMethods.SCI_LOADLEXERLIBRARY, IntPtr.Zero, new IntPtr(bp));
         }
@@ -1629,7 +1649,7 @@ namespace ScintillaNET
             DirectMessage(NativeMethods.SCI_CALLTIPUSESTYLE, new IntPtr(16));
 
             // Reset the valid "word chars" to work around a bug? in Scintilla which includes those below plus non-printable (beyond ASCII 127) characters
-            var bytes = Helpers.GetBytes("abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", Encoding.ASCII, zeroTerminated: true);
+            var bytes = Helpers.GetBytes("abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", Encoding.ASCII, true);
             fixed (byte* bp = bytes)
                 DirectMessage(NativeMethods.SCI_SETWORDCHARS, IntPtr.Zero, new IntPtr(bp));
 
@@ -1914,7 +1934,7 @@ namespace ScintillaNET
             if (String.IsNullOrEmpty(name))
                 return ScintillaNET.PropertyType.Boolean;
 
-            var bytes = Helpers.GetBytes(name, Encoding.ASCII, zeroTerminated: true);
+            var bytes = Helpers.GetBytes(name, Encoding.ASCII, true);
             fixed (byte* bp = bytes)
                 return (PropertyType)DirectMessage(NativeMethods.SCI_PROPERTYTYPE, new IntPtr(bp));
         }
@@ -1975,7 +1995,7 @@ namespace ScintillaNET
         /// </remarks>
         public unsafe void ReplaceSelection(string text)
         {
-            fixed (byte* bp = Helpers.GetBytes(text ?? string.Empty, Encoding, zeroTerminated: true))
+            fixed (byte* bp = Helpers.GetBytes(text ?? string.Empty, Encoding, true))
                 DirectMessage(NativeMethods.SCI_REPLACESEL, IntPtr.Zero, new IntPtr(bp));
         }
 
@@ -2201,7 +2221,7 @@ namespace ScintillaNET
         public unsafe int SearchInTarget(string text)
         {
             int bytePos = 0;
-            var bytes = Helpers.GetBytes(text ?? string.Empty, Encoding, zeroTerminated: false);
+            var bytes = Helpers.GetBytes(text ?? string.Empty, Encoding, false);
             fixed (byte* bp = bytes)
                 bytePos = DirectMessage(NativeMethods.SCI_SEARCHINTARGET, new IntPtr(bytes.Length), new IntPtr(bp)).ToInt32();
 
@@ -2303,7 +2323,7 @@ namespace ScintillaNET
         public unsafe void SetKeywords(int set, string keywords)
         {
             set = Helpers.Clamp(set, 0, NativeMethods.KEYWORDSET_MAX);
-            var bytes = Helpers.GetBytes(keywords ?? string.Empty, Encoding.ASCII, zeroTerminated: true);
+            var bytes = Helpers.GetBytes(keywords ?? string.Empty, Encoding.ASCII, true);
 
             fixed (byte* bp = bytes)
                 DirectMessage(NativeMethods.SCI_SETKEYWORDS, new IntPtr(set), new IntPtr(bp));
@@ -2357,8 +2377,8 @@ namespace ScintillaNET
             if (String.IsNullOrEmpty(name))
                 return;
 
-            var nameBytes = Helpers.GetBytes(name, Encoding.ASCII, zeroTerminated: true);
-            var valueBytes = Helpers.GetBytes(value ?? string.Empty, Encoding.ASCII, zeroTerminated: true);
+            var nameBytes = Helpers.GetBytes(name, Encoding.ASCII, true);
+            var valueBytes = Helpers.GetBytes(value ?? string.Empty, Encoding.ASCII, true);
 
             fixed (byte* nb = nameBytes)
             fixed (byte* vb = valueBytes)
@@ -2638,7 +2658,7 @@ namespace ScintillaNET
         public unsafe int TextWidth(int style, string text)
         {
             style = Helpers.Clamp(style, 0, Styles.Count - 1);
-            var bytes = Helpers.GetBytes(text ?? string.Empty, Encoding, zeroTerminated: true);
+            var bytes = Helpers.GetBytes(text ?? string.Empty, Encoding, true);
 
             fixed (byte* bp = bytes)
             {
@@ -4297,7 +4317,7 @@ namespace ScintillaNET
                 }
                 else
                 {
-                    var bytes = Helpers.GetBytes(value, Encoding.ASCII, zeroTerminated: true);
+                    var bytes = Helpers.GetBytes(value, Encoding.ASCII, true);
                     fixed (byte* bp = bytes)
                         DirectMessage(NativeMethods.SCI_SETLEXERLANGUAGE, IntPtr.Zero, new IntPtr(bp));
                 }
@@ -5129,7 +5149,7 @@ namespace ScintillaNET
                 }
                 else
                 {
-                    fixed (byte* bp = Helpers.GetBytes(value, Encoding, zeroTerminated: true))
+                    fixed (byte* bp = Helpers.GetBytes(value, Encoding, true))
                         DirectMessage(NativeMethods.SCI_SETTEXT, IntPtr.Zero, new IntPtr(bp));
                 }
             }
@@ -5321,7 +5341,7 @@ namespace ScintillaNET
 
                 // Scintilla stores each of the characters specified in a char array which it then
                 // uses as a lookup for word matching logic. Thus, any multibyte chars wouldn't work.
-                var bytes = Helpers.GetBytes(value, Encoding.ASCII, zeroTerminated: true);
+                var bytes = Helpers.GetBytes(value, Encoding.ASCII, true);
                 fixed (byte* bp = bytes)
                     DirectMessage(NativeMethods.SCI_SETWORDCHARS, IntPtr.Zero, new IntPtr(bp));
             }

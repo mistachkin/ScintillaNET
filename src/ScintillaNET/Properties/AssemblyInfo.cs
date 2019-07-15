@@ -42,5 +42,5 @@ using System.Runtime.InteropServices;
 
 #if (DEBUG)
 // For my own personal testing of internal members
-[assembly: InternalsVisibleToAttribute("ScintillaNET.Test")]
+// [assembly: InternalsVisibleToAttribute("ScintillaNET.Test")]
 #endif

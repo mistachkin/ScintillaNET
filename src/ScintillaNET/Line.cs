@@ -164,7 +164,7 @@ namespace ScintillaNET
             }
             else
             {
-                var bytes = Helpers.GetBytes(text, scintilla.Encoding, zeroTerminated: true);
+                var bytes = Helpers.GetBytes(text, scintilla.Encoding, true);
                 fixed (byte* bp = bytes)
                     scintilla.DirectMessage(NativeMethods.SCI_TOGGLEFOLDSHOWTEXT, new IntPtr(Index), new IntPtr(bp));
             }
@@ -286,7 +286,7 @@ namespace ScintillaNET
                 }
                 else
                 {
-                    var bytes = Helpers.GetBytes(value, scintilla.Encoding, zeroTerminated: true);
+                    var bytes = Helpers.GetBytes(value, scintilla.Encoding, true);
                     fixed (byte* bp = bytes)
                         scintilla.DirectMessage(NativeMethods.SCI_ANNOTATIONSETTEXT, new IntPtr(Index), new IntPtr(bp));
                 }
@@ -538,7 +538,7 @@ namespace ScintillaNET
                 }
                 else
                 {
-                    var bytes = Helpers.GetBytes(value, scintilla.Encoding, zeroTerminated: true);
+                    var bytes = Helpers.GetBytes(value, scintilla.Encoding, true);
                     fixed (byte* bp = bytes)
                         scintilla.DirectMessage(NativeMethods.SCI_MARGINSETTEXT, new IntPtr(Index), new IntPtr(bp));
                 }
