@@ -50,7 +50,7 @@ namespace ScintillaNET
             {
                 CachedText = value ?? string.Empty;
 
-                var bytes = Helpers.GetBytes(CachedText, scintilla.Encoding, zeroTerminated: false);
+                var bytes = Helpers.GetBytes(CachedText, scintilla.Encoding, false);
                 fixed (byte* bp = bytes)
                     scintilla.DirectMessage(NativeMethods.SCI_CHANGEINSERTION, new IntPtr(bytes.Length), new IntPtr(bp));
             }

@@ -278,7 +278,12 @@ namespace ScintillaNET
         /// <summary>
         /// Tracks a new line with the given CHARACTER length.
         /// </summary>
-        private void InsertPerLine(int index, int length = 0)
+        private void InsertPerLine(int index)
+        {
+            InsertPerLine(index, 0);
+        }
+
+        private void InsertPerLine(int index, int length)
         {
             MoveStep(index);
 

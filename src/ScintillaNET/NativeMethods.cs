@@ -1752,6 +1752,30 @@ namespace ScintillaNET
         public const int SCE_R_INFIX = 10;
         public const int SCE_R_INFIXEOL = 11;
 
+        // Tcl
+        public const int SCE_TCL_DEFAULT = 0;
+        public const int SCE_TCL_COMMENT = 1;
+        public const int SCE_TCL_COMMENTLINE = 2;
+        public const int SCE_TCL_NUMBER = 3;
+        public const int SCE_TCL_WORD_IN_QUOTE = 4;
+        public const int SCE_TCL_IN_QUOTE = 5;
+        public const int SCE_TCL_OPERATOR = 6;
+        public const int SCE_TCL_IDENTIFIER = 7;
+        public const int SCE_TCL_SUBSTITUTION = 8;
+        public const int SCE_TCL_SUB_BRACE = 9;
+        public const int SCE_TCL_MODIFIER = 10;
+        public const int SCE_TCL_EXPAND = 11;
+        public const int SCE_TCL_WORD = 12;
+        public const int SCE_TCL_WORD2 = 13;
+        public const int SCE_TCL_WORD3 = 14;
+        public const int SCE_TCL_WORD4 = 15;
+        public const int SCE_TCL_WORD5 = 16;
+        public const int SCE_TCL_WORD6 = 17;
+        public const int SCE_TCL_WORD7 = 18;
+        public const int SCE_TCL_WORD8 = 19;
+        public const int SCE_TCL_COMMENT_BOX = 20;
+        public const int SCE_TCL_BLOCK_COMMENT = 21;
+
         // Verilog
         public const int SCE_V_DEFAULT = 0;
         public const int SCE_V_COMMENT = 1;

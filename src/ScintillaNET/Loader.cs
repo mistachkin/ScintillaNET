@@ -18,7 +18,7 @@ namespace ScintillaNET
             if (data != null)
             {
                 length = Helpers.Clamp(length, 0, data.Length);
-                var bytes = Helpers.GetBytes(data, length, encoding, zeroTerminated: false);
+                var bytes = Helpers.GetBytes(data, length, encoding, false);
                 fixed (byte* bp = bytes)
                 {
                     var status = (IntPtr.Size == 4 ? loader32.AddData(self, bp, bytes.Length) : loader64.AddData(self, bp, bytes.Length));

@@ -176,7 +176,9 @@ namespace ScintillaNET
             }
         }
 
-        public GapBuffer(int capacity = 0)
+        public GapBuffer() : this(0) { }
+
+        public GapBuffer(int capacity)
         {
             this.buffer = new T[capacity];
             this.gapEnd = buffer.Length;

@@ -141,6 +141,11 @@ namespace ScintillaNET
         Sql = NativeMethods.SCLEX_SQL,
 
         /// <summary>
+        /// The Tool Command Language (Tcl) lexer.
+        /// </summary>
+        Tcl = NativeMethods.SCLEX_TCL,
+
+        /// <summary>
         /// The Visual Basic (VB) lexer.
         /// </summary>
         Vb = NativeMethods.SCLEX_VB,

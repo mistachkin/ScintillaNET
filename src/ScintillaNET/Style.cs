@@ -3116,6 +3116,126 @@ namespace ScintillaNET
 
         #endregion R
 
+        #region Tcl
+
+        /// <summary>
+        /// Style constants for use with the <see cref="Lexer.Tcl" /> lexer.
+        /// </summary>
+        public static class Tcl
+        {
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int Default = NativeMethods.SCE_TCL_DEFAULT;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int Comment = NativeMethods.SCE_TCL_COMMENT;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int CommentLine = NativeMethods.SCE_TCL_COMMENTLINE;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int Number = NativeMethods.SCE_TCL_NUMBER;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int WordInQuote = NativeMethods.SCE_TCL_WORD_IN_QUOTE;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int InQuote = NativeMethods.SCE_TCL_IN_QUOTE;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int Operator = NativeMethods.SCE_TCL_OPERATOR;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int Identifier = NativeMethods.SCE_TCL_IDENTIFIER;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int Substitution = NativeMethods.SCE_TCL_SUBSTITUTION;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int SubBrace = NativeMethods.SCE_TCL_SUB_BRACE;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int Modifier = NativeMethods.SCE_TCL_MODIFIER;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int Expand = NativeMethods.SCE_TCL_EXPAND;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int Word = NativeMethods.SCE_TCL_WORD;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int Word2 = NativeMethods.SCE_TCL_WORD2;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int Word3 = NativeMethods.SCE_TCL_WORD3;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int Word4 = NativeMethods.SCE_TCL_WORD4;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int Word5 = NativeMethods.SCE_TCL_WORD5;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int Word6 = NativeMethods.SCE_TCL_WORD6;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int Word7 = NativeMethods.SCE_TCL_WORD7;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int Word8 = NativeMethods.SCE_TCL_WORD8;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int CommentBox = NativeMethods.SCE_TCL_COMMENT_BOX;
+
+            /// <summary>
+            /// TBD
+            /// </summary>
+            public const int BlockComment = NativeMethods.SCE_TCL_BLOCK_COMMENT;
+        }
+
+        #endregion
+
         #region Vb
 
         /// <summary>

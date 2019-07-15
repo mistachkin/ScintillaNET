@@ -14,15 +14,15 @@ namespace ScintillaNET {
         /// <summary>
         /// Returns the number of buffered characters left to be read.
         /// </summary>
-        private int BufferRemaining => _data != null ? _data.Length - _dataIndex : 0;
+        private int BufferRemaining { get { return _data != null ? _data.Length - _dataIndex : 0; } }
         /// <summary>
         /// Returns the number of unbuffered characters left to be read.
         /// </summary>
-        private int UnbufferedRemaining => _lastData - _nextData;
+        private int UnbufferedRemaining { get { return _lastData - _nextData; } }
         /// <summary>
         /// Returns the total number of characters left to be read.
         /// </summary>
-        private int TotalRemaining => BufferRemaining + UnbufferedRemaining;
+        private int TotalRemaining { get { return BufferRemaining + UnbufferedRemaining; } }
 
         private Scintilla _scintilla;
         private int _bufferSize;
