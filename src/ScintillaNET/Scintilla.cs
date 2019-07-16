@@ -2327,7 +2327,7 @@ namespace ScintillaNET
             var max = (length > 0) ? min + length - 1 : min;
 
             style = Helpers.Clamp(style, min, max);
-            var bytes = Helpers.GetBytes(identifiers ?? string.Empty, Encoding.ASCII, zeroTerminated: true);
+            var bytes = Helpers.GetBytes(identifiers ?? string.Empty, Encoding.ASCII, true);
 
             fixed (byte* bp = bytes)
                 DirectMessage(NativeMethods.SCI_SETIDENTIFIERS, new IntPtr(style), new IntPtr(bp));
