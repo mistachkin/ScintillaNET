@@ -1914,26 +1914,27 @@ namespace ScintillaNET
         public struct SCNotification
         {
             public Sci_NotifyHeader nmhdr;
-            // NOTE: position/length/linesAdded/line/annotationLinesAdded are the
-            //       Scintilla "Sci_Position" fields. They are 32-bit "int" here to
-            //       match the bundled SciLexer.dll (Scintilla 3.7.2). Scintilla 4.0+
-            //       widened Sci_Position to pointer-sized (ptrdiff_t); if the native
-            //       library is ever updated to 4.x, change these five back to IntPtr
-            //       AND update the consumers that pass/read them (the event dispatch
-            //       in Scintilla.cs and Track*Text in LineCollection.cs). text,
-            //       wParam and lParam are genuine pointers (pointer-sized in every
-            //       version) and must stay IntPtr.
-            public int position;
+            // NOTE: position/length/linesAdded/line/annotationLinesAdded are the Scintilla
+            //       "Sci_Position" fields. They are pointer-sized (ptrdiff_t) in Scintilla
+            //       3.8.0+ -- which includes the deployed native library (4.x) -- so they
+            //       MUST be IntPtr here. As 32-bit "int" they would misalign every field
+            //       after the first one on x64 and corrupt SCN_MODIFIED (garbage
+            //       length/linesAdded/line). Consumers read them via IntPtr.ToInt32()
+            //       (document positions < 2 GB). If the native library is ever downgraded
+            //       below 3.8.0 (int Sci_Position) these five would need to revert to int.
+            //       text, wParam and lParam are genuine pointers (pointer-sized in every
+            //       version) and always stay IntPtr.
+            public IntPtr position;
             public int ch;
             public int modifiers;
             public int modificationType;
             public IntPtr text;
-            public int length;
-            public int linesAdded;
+            public IntPtr length;
+            public IntPtr linesAdded;
             public int message;
             public IntPtr wParam;
             public IntPtr lParam;
-            public int line;
+            public IntPtr line;
             public int foldLevelNow;
             public int foldLevelPrev;
             public int margin;
@@ -1941,9 +1942,10 @@ namespace ScintillaNET
             public int x;
             public int y;
             public int token;
-            public int annotationLinesAdded;
+            public IntPtr annotationLinesAdded;
             public int updated;
             public int listCompletionMethod;
+            public int characterSource;
         }
 
         #endregion Structures

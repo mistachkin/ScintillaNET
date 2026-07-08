@@ -363,10 +363,10 @@ namespace ScintillaNET
             // Fake an insert notification
             var scn = new NativeMethods.SCNotification();
             var adjustedLines = scintilla.DirectMessage(NativeMethods.SCI_GETLINECOUNT).ToInt32() - 1;
-            scn.linesAdded = adjustedLines;
-            scn.position = 0;
-            scn.length = scintilla.DirectMessage(NativeMethods.SCI_GETLENGTH).ToInt32();
-            scn.text = scintilla.DirectMessage(NativeMethods.SCI_GETRANGEPOINTER, new IntPtr(scn.position), new IntPtr(scn.length));
+            scn.linesAdded = new IntPtr(adjustedLines);
+            scn.position = IntPtr.Zero;
+            scn.length = scintilla.DirectMessage(NativeMethods.SCI_GETLENGTH);
+            scn.text = scintilla.DirectMessage(NativeMethods.SCI_GETRANGEPOINTER, scn.position, scn.length);
             TrackInsertText(scn);
         }
 
@@ -407,11 +407,11 @@ namespace ScintillaNET
 
         private void TrackDeleteText(NativeMethods.SCNotification scn)
         {
-            var startLine = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, new IntPtr(scn.position)).ToInt32();
-            if (scn.linesAdded == 0)
+            var startLine = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, scn.position).ToInt32();
+            if (scn.linesAdded == IntPtr.Zero)
             {
                 // That was easy
-                var delta = GetCharCount(scn.text, scn.length, scintilla.Encoding);
+                var delta = GetCharCount(scn.text, scn.length.ToInt32(), scintilla.Encoding);
                 AdjustLineLength(startLine, delta * -1);
             }
             else
@@ -424,7 +424,7 @@ namespace ScintillaNET
                 // Bound the removal to the lines the mirror actually has after
                 // startLine, so a line delta larger than the tracked count cannot
                 // walk DeletePerLine off the end of perLineData.
-                var linesRemoved = Math.Min(scn.linesAdded * -1, (Count - 1) - startLine);
+                var linesRemoved = Math.Min(scn.linesAdded.ToInt32() * -1, (Count - 1) - startLine);
                 for (int i = 0; i < linesRemoved; i++)
                 {
                     // Deleted line
@@ -435,11 +435,11 @@ namespace ScintillaNET
 
         private void TrackInsertText(NativeMethods.SCNotification scn)
         {
-            var startLine = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, new IntPtr(scn.position)).ToInt32();
-            if (scn.linesAdded == 0)
+            var startLine = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, scn.position).ToInt32();
+            if (scn.linesAdded == IntPtr.Zero)
             {
                 // That was easy
-                var delta = GetCharCount(scn.position, scn.length);
+                var delta = GetCharCount(scn.position.ToInt32(), scn.length.ToInt32());
                 AdjustLineLength(startLine, delta);
             }
             else
@@ -452,7 +452,8 @@ namespace ScintillaNET
                 lineByteLength = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(startLine)).ToInt32();
                 AdjustLineLength(startLine, GetCharCount(lineByteStart, lineByteLength) - CharLineLength(startLine));
 
-                for (int i = 1; i <= scn.linesAdded; i++)
+                var linesAdded = scn.linesAdded.ToInt32();
+                for (int i = 1; i <= linesAdded; i++)
                 {
                     var line = startLine + i;
 
