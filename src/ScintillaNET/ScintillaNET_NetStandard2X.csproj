@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
 
   <!--
       ScintillaNET_NetStandard2X.csproj: a .NET Core 3.0 build of the
@@ -6,13 +6,31 @@
       by the Eagle "HotKey" plugin's NetStandard2X build.
 
       This is intentionally NOT in the Eagle project style; ScintillaNET is an
-      external component, so this is a plain SDK-style project.  WinForms is
-      enabled via "UseWindowsForms"; "EnableWindowsTargeting" permits the
-      Windows Desktop reference assemblies to be restored (and this project to
-      compile) on non-Windows hosts, which is all that is needed to produce the
-      managed assembly (the native SciLexer library is loaded at run time via
-      P/Invoke, so it is not required to build).
+      external component.  It uses the SDK through explicit Sdk.props /
+      Sdk.targets imports (instead of the Sdk="..." attribute) for one reason
+      only: so BaseIntermediateOutputPath can be set BEFORE the SDK props are
+      imported (see its note below).  WinForms is enabled via "UseWindowsForms";
+      "EnableWindowsTargeting" permits the Windows Desktop reference assemblies
+      to be restored (and this project to compile) on non-Windows hosts, which
+      is all that is needed to produce the managed assembly (the native SciLexer
+      library is loaded at run time via P/Invoke, so it is not required to
+      build).
   -->
+
+  <!--
+      NOTE: BaseIntermediateOutputPath keeps this project's "obj" distinct from
+            the sibling .NET Framework ScintillaNET.csproj so their restore
+            outputs (project.assets.json, etc.) do not collide.  It MUST be set
+            before the SDK props are imported, because those pull in
+            Microsoft.Common.props, which computes NuGet's
+            MSBuildProjectExtensionsPath from it; set any later and NuGet writes
+            to the default "obj" anyway -- and MSBuild warns MSB3539.
+  -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>obj\NetStandard2X\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
     <ProjectGuid>{3A578A21-666A-4327-BEF8-111714C78FF3}</ProjectGuid>
@@ -31,11 +49,9 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 
     <!--
-        NOTE: Keep this project's intermediate + output directories distinct
-              from the .NET Framework ScintillaNET.csproj that shares this
-              folder, so their "obj"/"bin" do not collide.
+        NOTE: Keep this project's output ("bin") distinct from the sibling .NET
+              Framework ScintillaNET.csproj as well; its "obj" is handled above.
     -->
-    <BaseIntermediateOutputPath>obj\NetStandard2X\</BaseIntermediateOutputPath>
     <BaseOutputPath>bin\NetStandard2X\</BaseOutputPath>
 
     <!--
@@ -47,5 +63,7 @@
     <AssemblyOriginatorKeyFile>..\ScintillaNET.snk</AssemblyOriginatorKeyFile>
     <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
   </PropertyGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
 </Project>
