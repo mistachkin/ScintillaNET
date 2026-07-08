@@ -238,23 +238,23 @@ namespace ScintillaNET
             if (chars == null)
                 chars = string.Empty;
 
-            if (fillUpChars != IntPtr.Zero)
-            {
-                Marshal.FreeHGlobal(fillUpChars);
-                fillUpChars = IntPtr.Zero;
-            }
-
             var count = (Encoding.GetByteCount(chars) + 1);
             IntPtr newFillUpChars = Marshal.AllocHGlobal(count);
             fixed (char* ch = chars)
                 Encoding.GetBytes(ch, chars.Length, (byte*)newFillUpChars, count);
 
             ((byte*)newFillUpChars)[count - 1] = 0; // Null terminate
+
+            // Install the new buffer with Scintilla (which retains the pointer)
+            // BEFORE freeing the previous one, so native never briefly holds a
+            // dangling pointer and a mid-method allocation failure cannot leave
+            // native pointing at freed memory.
+            DirectMessage(NativeMethods.SCI_AUTOCSETFILLUPS, IntPtr.Zero, newFillUpChars);
+
+            if (fillUpChars != IntPtr.Zero)
+                Marshal.FreeHGlobal(fillUpChars);
+
             fillUpChars = newFillUpChars;
-
-            // var str = new String((sbyte*)fillUpChars, 0, count, Encoding);
-
-            DirectMessage(NativeMethods.SCI_AUTOCSETFILLUPS, IntPtr.Zero, fillUpChars);
         }
 
         /// <summary>
@@ -273,8 +273,16 @@ namespace ScintillaNET
                 // Convert to bytes by counting back the specified number of characters
                 var endPos = DirectMessage(NativeMethods.SCI_GETCURRENTPOS).ToInt32();
                 var startPos = endPos;
-                for (int i = 0; i < lenEntered; i++)
-                    startPos = DirectMessage(NativeMethods.SCI_POSITIONRELATIVE, new IntPtr(startPos), new IntPtr(-1)).ToInt32();
+                // "lenEntered" is a count of UTF-16 code units; SCI_POSITIONRELATIVE
+                // moves by whole code points, so count each 4-byte (surrogate-pair)
+                // step as 2 units, mirroring CharToBytePosition.
+                var remaining = lenEntered;
+                while (remaining > 0)
+                {
+                    var prevPos = DirectMessage(NativeMethods.SCI_POSITIONRELATIVE, new IntPtr(startPos), new IntPtr(-1)).ToInt32();
+                    remaining -= ((startPos - prevPos) == 4 ? 2 : 1);
+                    startPos = prevPos;
+                }
 
                 lenEntered = (endPos - startPos);
             }
@@ -820,12 +828,15 @@ namespace ScintillaNET
                     if (IsHandleCreated)
                         DestroyHandle();
                 }
+            }
 
-                if (fillUpChars != IntPtr.Zero)
-                {
-                    Marshal.FreeHGlobal(fillUpChars);
-                    fillUpChars = IntPtr.Zero;
-                }
+            // fillUpChars is unmanaged (AllocHGlobal); free it on BOTH the Dispose
+            // and finalizer paths so a control that is garbage-collected without an
+            // explicit Dispose() does not leak it.
+            if (fillUpChars != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(fillUpChars);
+                fillUpChars = IntPtr.Zero;
             }
 
             base.Dispose(disposing);
@@ -940,7 +951,9 @@ namespace ScintillaNET
 
                 DirectMessage(NativeMethods.SCI_GETTEXTRANGE, IntPtr.Zero, new IntPtr(range));
                 var str = Helpers.GetString(new IntPtr(bp), length, Encoding);
-                return str[0];
+                // Return the full Unicode code point: a 4-byte UTF-8 character decodes
+                // to a surrogate pair, and str[0] alone would be just the high surrogate.
+                return char.ConvertToUtf32(str, 0);
             }
         }
 
@@ -1239,8 +1252,8 @@ namespace ScintillaNET
         /// <seealso cref="Line.Visible" />
         public void HideLines(int lineStart, int lineEnd)
         {
-            lineStart = Helpers.Clamp(lineStart, 0, Lines.Count);
-            lineEnd = Helpers.Clamp(lineEnd, lineStart, Lines.Count);
+            lineStart = Helpers.Clamp(lineStart, 0, Lines.Count - 1);
+            lineEnd = Helpers.Clamp(lineEnd, lineStart, Lines.Count - 1);
 
             DirectMessage(NativeMethods.SCI_HIDELINES, new IntPtr(lineStart), new IntPtr(lineEnd));
         }
@@ -2627,8 +2640,8 @@ namespace ScintillaNET
         /// <seealso cref="Line.Visible" />
         public void ShowLines(int lineStart, int lineEnd)
         {
-            lineStart = Helpers.Clamp(lineStart, 0, Lines.Count);
-            lineEnd = Helpers.Clamp(lineEnd, lineStart, Lines.Count);
+            lineStart = Helpers.Clamp(lineStart, 0, Lines.Count - 1);
+            lineEnd = Helpers.Clamp(lineEnd, lineStart, Lines.Count - 1);
 
             DirectMessage(NativeMethods.SCI_SHOWLINES, new IntPtr(lineStart), new IntPtr(lineEnd));
         }
@@ -2868,6 +2881,13 @@ namespace ScintillaNET
                         base.WndProc(ref m);
                         break;
                 }
+            }
+            else
+            {
+                // A notification code outside the handled SCN range (only reachable
+                // against a newer SciLexer.dll than 3.7.2) is passed to default
+                // processing rather than being silently swallowed.
+                base.WndProc(ref m);
             }
         }
 

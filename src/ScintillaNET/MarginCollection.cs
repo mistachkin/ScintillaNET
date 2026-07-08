@@ -151,7 +151,7 @@ namespace ScintillaNET
         {
             get
             {
-                index = Helpers.Clamp(index, 0, Count - 1);
+                index = Helpers.Clamp(index, 0, Math.Max(0, Count - 1));
                 return new Margin(scintilla, index);
             }
         }

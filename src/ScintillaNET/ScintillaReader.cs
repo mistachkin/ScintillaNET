@@ -133,12 +133,17 @@ namespace ScintillaNET {
                     _data.CopyTo(_dataIndex, buffer, index, bufferRemaining);
                     if (count > bufferRemaining) {
                         // buffer is smaller; read rest
-                        var rest = _scintilla.GetTextRange(
-                            _nextData,
-                            Math.Min(count - bufferRemaining, UnbufferedRemaining));
-                        rest.CopyTo(0, buffer, index + bufferRemaining, rest.Length);
-                        count = bufferRemaining + rest.Length;
-                        _nextData += rest.Length;
+                        var toRead = Math.Min(count - bufferRemaining, UnbufferedRemaining);
+                        var rest = _scintilla.GetTextRange(_nextData, toRead);
+                        // GetTextRange rounds a boundary that bisects a surrogate pair
+                        // up to the whole code point, so it can return one extra unit.
+                        // Never copy or report more than requested (which would overrun
+                        // the caller's buffer) or split a surrogate: drop a trailing
+                        // partial astral char here and re-read it whole next time.
+                        var restLen = rest.Length > toRead ? toRead - 1 : rest.Length;
+                        rest.CopyTo(0, buffer, index + bufferRemaining, restLen);
+                        count = bufferRemaining + restLen;
+                        _nextData += restLen;
                     }
                     // read at least up to buffer's end; refill buffer
                     BufferNextRegion();

@@ -95,7 +95,7 @@ namespace ScintillaNET
         public const int INDIC_TEXTFORE = 17;
         public const int INDIC_POINT = 18;
         public const int INDIC_POINTCHARACTER = 19;
-        public const int INDIC_MAX = 31;
+        public const int INDIC_MAX = 35; // Scintilla 3.7.2: indicators 0-35 (32-35 reserved for IME)
         public const int INDIC_CONTAINER = 8;
 
         // Phases
@@ -1810,6 +1810,9 @@ namespace ScintillaNET
 
         [DllImport(DLL_NAME_KERNEL32, SetLastError = true)]
         public static extern IntPtr GlobalFree(IntPtr hMem);
+
+        [DllImport(DLL_NAME_KERNEL32, EntryPoint = "RtlMoveMemory")]
+        public static extern void MoveMemory(IntPtr destination, IntPtr source, UIntPtr length);
 
         [DllImport(DLL_NAME_KERNEL32, EntryPoint = "RtlMoveMemory", SetLastError = true)]
         public static extern void MoveMemory(IntPtr dest, IntPtr src, int length);

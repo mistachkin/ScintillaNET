@@ -132,9 +132,9 @@ namespace ScintillaNET
 
             try
             {
-                var buffer = new byte[length];
-                Marshal.Copy(source, buffer, 0, length);
-                Marshal.Copy(buffer, 0, dest, length);
+                // Direct native copy (no intermediate managed buffer), so nothing
+                // between GlobalLock and the return can throw and leak the handle.
+                NativeMethods.MoveMemory(dest, source, new UIntPtr((uint)length));
             }
             finally
             {
