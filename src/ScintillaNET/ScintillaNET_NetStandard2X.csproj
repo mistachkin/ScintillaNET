@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+      ScintillaNET_NetStandard2X.csproj: a .NET Core 3.0 build of the
+      ScintillaNET WinForms control library, produced so it can be referenced
+      by the Eagle "HotKey" plugin's NetStandard2X build.
+
+      This is intentionally NOT in the Eagle project style; ScintillaNET is an
+      external component, so this is a plain SDK-style project.  WinForms is
+      enabled via "UseWindowsForms"; "EnableWindowsTargeting" permits the
+      Windows Desktop reference assemblies to be restored (and this project to
+      compile) on non-Windows hosts, which is all that is needed to produce the
+      managed assembly (the native SciLexer library is loaded at run time via
+      P/Invoke, so it is not required to build).
+  -->
+
+  <PropertyGroup>
+    <ProjectGuid>{3A578A21-666A-4327-BEF8-111714C78FF3}</ProjectGuid>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <OutputType>Library</OutputType>
+    <RootNamespace>ScintillaNET</RootNamespace>
+    <AssemblyName>ScintillaNET</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!--
+        NOTE: An existing Properties\AssemblyInfo.cs supplies the assembly
+              attributes, so suppress the SDK-generated ones.
+    -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+
+    <!--
+        NOTE: Keep this project's intermediate + output directories distinct
+              from the .NET Framework ScintillaNET.csproj that shares this
+              folder, so their "obj"/"bin" do not collide.
+    -->
+    <BaseIntermediateOutputPath>obj\NetStandard2X\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin\NetStandard2X\</BaseOutputPath>
+
+    <!--
+        NOTE: Strong-name signed with the original key.  PublicSign is used on
+              non-Windows hosts because the strong-name signing tool (sn.exe)
+              cannot be run against a .NET Core assembly there.
+    -->
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>..\ScintillaNET.snk</AssemblyOriginatorKeyFile>
+    <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
+  </PropertyGroup>
+
+</Project>
