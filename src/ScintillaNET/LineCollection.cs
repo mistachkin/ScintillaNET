@@ -109,9 +109,14 @@ namespace ScintillaNET
 
             while (pos > 0)
             {
-                // Move char-by-char
-                bytePos = scintilla.DirectMessage(NativeMethods.SCI_POSITIONRELATIVE, new IntPtr(bytePos), new IntPtr(1)).ToInt32();
-                pos--;
+                // Move forward one whole character. SCI_POSITIONRELATIVE moves by
+                // code points, but "pos" counts UTF-16 code units (to round-trip with
+                // ByteToCharPosition / GetCharCount), so decrement by the character's
+                // UTF-16 width: a 4-byte UTF-8 sequence is a surrogate pair (2 units),
+                // any shorter sequence is a single unit.
+                var nextBytePos = scintilla.DirectMessage(NativeMethods.SCI_POSITIONRELATIVE, new IntPtr(bytePos), new IntPtr(1)).ToInt32();
+                pos -= ((nextBytePos - bytePos) == 4 ? 2 : 1);
+                bytePos = nextBytePos;
             }
 
             return bytePos;
@@ -342,10 +347,10 @@ namespace ScintillaNET
             // Fake an insert notification
             var scn = new NativeMethods.SCNotification();
             var adjustedLines = scintilla.DirectMessage(NativeMethods.SCI_GETLINECOUNT).ToInt32() - 1;
-            scn.linesAdded = new IntPtr(adjustedLines);
-            scn.position = IntPtr.Zero;
-            scn.length = scintilla.DirectMessage(NativeMethods.SCI_GETLENGTH);
-            scn.text = scintilla.DirectMessage(NativeMethods.SCI_GETRANGEPOINTER, scn.position, scn.length);
+            scn.linesAdded = adjustedLines;
+            scn.position = 0;
+            scn.length = scintilla.DirectMessage(NativeMethods.SCI_GETLENGTH).ToInt32();
+            scn.text = scintilla.DirectMessage(NativeMethods.SCI_GETRANGEPOINTER, new IntPtr(scn.position), new IntPtr(scn.length));
             TrackInsertText(scn);
         }
 
@@ -375,11 +380,11 @@ namespace ScintillaNET
 
         private void TrackDeleteText(NativeMethods.SCNotification scn)
         {
-            var startLine = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, scn.position).ToInt32();
-            if (scn.linesAdded == IntPtr.Zero)
+            var startLine = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, new IntPtr(scn.position)).ToInt32();
+            if (scn.linesAdded == 0)
             {
                 // That was easy
-                var delta = GetCharCount(scn.text, scn.length.ToInt32(), scintilla.Encoding);
+                var delta = GetCharCount(scn.text, scn.length, scintilla.Encoding);
                 AdjustLineLength(startLine, delta * -1);
             }
             else
@@ -389,7 +394,7 @@ namespace ScintillaNET
                 var lineByteLength = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(startLine)).ToInt32();
                 AdjustLineLength(startLine, GetCharCount(lineByteStart, lineByteLength) - CharLineLength(startLine));
 
-                var linesRemoved = scn.linesAdded.ToInt32() * -1;
+                var linesRemoved = scn.linesAdded * -1;
                 for (int i = 0; i < linesRemoved; i++)
                 {
                     // Deleted line
@@ -400,11 +405,11 @@ namespace ScintillaNET
 
         private void TrackInsertText(NativeMethods.SCNotification scn)
         {
-            var startLine = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, scn.position).ToInt32();
-            if (scn.linesAdded == IntPtr.Zero)
+            var startLine = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, new IntPtr(scn.position)).ToInt32();
+            if (scn.linesAdded == 0)
             {
                 // That was easy
-                var delta = GetCharCount(scn.position.ToInt32(), scn.length.ToInt32());
+                var delta = GetCharCount(scn.position, scn.length);
                 AdjustLineLength(startLine, delta);
             }
             else
@@ -417,7 +422,7 @@ namespace ScintillaNET
                 lineByteLength = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(startLine)).ToInt32();
                 AdjustLineLength(startLine, GetCharCount(lineByteStart, lineByteLength) - CharLineLength(startLine));
 
-                for (int i = 1; i <= scn.linesAdded.ToInt32(); i++)
+                for (int i = 1; i <= scn.linesAdded; i++)
                 {
                     var line = startLine + i;
 

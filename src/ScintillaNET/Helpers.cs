@@ -76,8 +76,12 @@ namespace ScintillaNET
 
             while (bytePos < length)
             {
-                if (decoder.GetCharCount(text + bytePos, 1, false) > 0)
-                    result[charPos++] = *(styles + bytePos); // New char
+                // A completing byte yields 1 UTF-16 unit for a BMP char or 2 for a
+                // surrogate pair; write the style to each unit so "result" (sized in
+                // UTF-16 units) stays aligned.
+                var charCount = decoder.GetCharCount(text + bytePos, 1, false);
+                for (var i = 0; i < charCount; i++)
+                    result[charPos++] = *(styles + bytePos);
 
                 bytePos++;
             }
@@ -99,13 +103,45 @@ namespace ScintillaNET
             while (bytePos < length && charPos < styles.Length)
             {
                 result[bytePos] = styles[charPos];
-                if (decoder.GetCharCount(text + bytePos, 1, false) > 0)
-                    charPos++; // Move a char
+                // Advance the char index by the completing character's UTF-16 width
+                // (2 for a surrogate pair, 1 for a BMP char, 0 for a continuation byte).
+                charPos += decoder.GetCharCount(text + bytePos, 1, false);
 
                 bytePos++;
             }
 
             return result;
+        }
+
+        // The clipboard requires a movable (GMEM_MOVEABLE) global memory handle, but
+        // NativeMemoryStream uses fixed (AllocHGlobal) memory; copy the payload into a
+        // movable handle to give to SetClipboardData. On success the clipboard owns the
+        // returned handle; the caller frees it only if SetClipboardData fails.
+        private static IntPtr CopyToMovableHGlobal(IntPtr source, int length)
+        {
+            var hGlobal = NativeMethods.GlobalAlloc(NativeMethods.GMEM_MOVEABLE, new UIntPtr((uint)length));
+            if (hGlobal == IntPtr.Zero)
+                return IntPtr.Zero;
+
+            var dest = NativeMethods.GlobalLock(hGlobal);
+            if (dest == IntPtr.Zero)
+            {
+                NativeMethods.GlobalFree(hGlobal);
+                return IntPtr.Zero;
+            }
+
+            try
+            {
+                var buffer = new byte[length];
+                Marshal.Copy(source, buffer, 0, length);
+                Marshal.Copy(buffer, 0, dest, length);
+            }
+            finally
+            {
+                NativeMethods.GlobalUnlock(hGlobal);
+            }
+
+            return hGlobal;
         }
 
         public static int Clamp(int value, int min, int max)
@@ -441,8 +477,10 @@ namespace ScintillaNET
                     ms.WriteByte(0);
 
                     var str = GetString(ms.Pointer, (int)ms.Length, Encoding.UTF8);
-                    if (NativeMethods.SetClipboardData(CF_HTML, ms.Pointer) != IntPtr.Zero)
-                        ms.FreeOnDispose = false; // Clipboard will free memory
+                    // Hand the clipboard a movable copy; ms keeps and frees its own buffer.
+                    var hGlobal = CopyToMovableHGlobal(ms.Pointer, (int)ms.Length);
+                    if (hGlobal != IntPtr.Zero && NativeMethods.SetClipboardData(CF_HTML, hGlobal) == IntPtr.Zero)
+                        NativeMethods.GlobalFree(hGlobal); // clipboard rejected it; release the copy
                 }
             }
             catch (Exception ex)
@@ -724,8 +762,10 @@ namespace ScintillaNET
                     ms.WriteByte(0);
 
                     // var str = GetString(ms.Pointer, (int)ms.Length, Encoding.ASCII);
-                    if (NativeMethods.SetClipboardData(CF_RTF, ms.Pointer) != IntPtr.Zero)
-                        ms.FreeOnDispose = false; // Clipboard will free memory
+                    // Hand the clipboard a movable copy; ms keeps and frees its own buffer.
+                    var hGlobal = CopyToMovableHGlobal(ms.Pointer, (int)ms.Length);
+                    if (hGlobal != IntPtr.Zero && NativeMethods.SetClipboardData(CF_RTF, hGlobal) == IntPtr.Zero)
+                        NativeMethods.GlobalFree(hGlobal); // clipboard rejected it; release the copy
                 }
             }
             catch (Exception ex)
@@ -981,7 +1021,7 @@ namespace ScintillaNET
                 var mainCaretPos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNCARET, new IntPtr(mainSelection)).ToInt32();
                 var lineIndex = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, new IntPtr(mainCaretPos)).ToInt32();
                 var lineStartBytePos = scintilla.DirectMessage(NativeMethods.SCI_POSITIONFROMLINE, new IntPtr(lineIndex)).ToInt32();
-                var lineLength = scintilla.DirectMessage(NativeMethods.SCI_POSITIONFROMLINE, new IntPtr(lineIndex)).ToInt32();
+                var lineLength = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(lineIndex)).ToInt32();
 
                 var styledText = GetStyledText(scintilla, lineStartBytePos, (lineStartBytePos + lineLength), false);
                 segments.Add(styledText);

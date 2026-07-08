@@ -34,7 +34,7 @@ namespace ScintillaNET
                 // How much to grow the buffer is a tricky question.
                 // Our current algo will double the capacity unless that's not enough.
                 var minCapacity = Count + length;
-                var newCapacity = (buffer.Length * 2);
+                var newCapacity = (int)Math.Min((long)buffer.Length * 2, int.MaxValue);
                 if (newCapacity < minCapacity)
                 {
                     newCapacity = minCapacity;

@@ -282,7 +282,7 @@ namespace ScintillaNET
                 if (string.IsNullOrEmpty(value))
                 {
                     // Scintilla docs suggest that setting to NULL rather than an empty string will free memory
-                    scintilla.DirectMessage(NativeMethods.SCI_ANNOTATIONGETTEXT, new IntPtr(Index), IntPtr.Zero);
+                    scintilla.DirectMessage(NativeMethods.SCI_ANNOTATIONSETTEXT, new IntPtr(Index), IntPtr.Zero);
                 }
                 else
                 {

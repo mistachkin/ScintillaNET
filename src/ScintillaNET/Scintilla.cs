@@ -981,6 +981,13 @@ namespace ScintillaNET
 
             if (String.Equals(
                     Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE"),
+                    "ARM64", StringComparison.OrdinalIgnoreCase))
+            {
+                return Path.Combine(directory, "SciLexerARM64.dll");
+            }
+
+            if (String.Equals(
+                    Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE"),
                     "ARM", StringComparison.OrdinalIgnoreCase))
             {
                 return Path.Combine(directory, "SciLexerARM.dll");
@@ -1666,6 +1673,19 @@ namespace ScintillaNET
             base.OnHandleCreated(e);
         }
 
+        protected override void OnHandleDestroyed(EventArgs e)
+        {
+            // The cached native direct pointer (sciPtr) belongs to the Scintilla
+            // window backing the current handle. If the handle is recreated (e.g. a
+            // reparent or style change), that pointer can reference a freed object, so
+            // clear it and let SciPointer re-fetch against the new handle. The default
+            // destroy-handle workaround keeps the native window alive, in which case
+            // the re-fetch simply returns the same pointer.
+            sciPtr = IntPtr.Zero;
+
+            base.OnHandleDestroyed(e);
+        }
+
         /// <summary>
         /// Raises the <see cref="HotspotClick" /> event.
         /// </summary>
@@ -2059,14 +2079,14 @@ namespace ScintillaNET
         private void ScnDoubleClick(ref NativeMethods.SCNotification scn)
         {
             var keys = Keys.Modifiers & (Keys)(scn.modifiers << 16);
-            var eventArgs = new DoubleClickEventArgs(this, keys, scn.position.ToInt32(), scn.line.ToInt32());
+            var eventArgs = new DoubleClickEventArgs(this, keys, scn.position, scn.line);
             OnDoubleClick(eventArgs);
         }
 
         private void ScnHotspotClick(ref NativeMethods.SCNotification scn)
         {
             var keys = Keys.Modifiers & (Keys)(scn.modifiers << 16);
-            var eventArgs = new HotspotClickEventArgs(this, keys, scn.position.ToInt32());
+            var eventArgs = new HotspotClickEventArgs(this, keys, scn.position);
             switch (scn.nmhdr.code)
             {
                 case NativeMethods.SCN_HOTSPOTCLICK:
@@ -2089,11 +2109,11 @@ namespace ScintillaNET
             {
                 case NativeMethods.SCN_INDICATORCLICK:
                     var keys = Keys.Modifiers & (Keys)(scn.modifiers << 16);
-                    OnIndicatorClick(new IndicatorClickEventArgs(this, keys, scn.position.ToInt32()));
+                    OnIndicatorClick(new IndicatorClickEventArgs(this, keys, scn.position));
                     break;
 
                 case NativeMethods.SCN_INDICATORRELEASE:
-                    OnIndicatorRelease(new IndicatorReleaseEventArgs(this, scn.position.ToInt32()));
+                    OnIndicatorRelease(new IndicatorReleaseEventArgs(this, scn.position));
                     break;
             }
         }
@@ -2101,7 +2121,7 @@ namespace ScintillaNET
         private void ScnMarginClick(ref NativeMethods.SCNotification scn)
         {
             var keys = Keys.Modifiers & (Keys)(scn.modifiers << 16);
-            var eventArgs = new MarginClickEventArgs(this, keys, scn.position.ToInt32(), scn.margin);
+            var eventArgs = new MarginClickEventArgs(this, keys, scn.position, scn.margin);
 
             if (scn.nmhdr.code == NativeMethods.SCN_MARGINCLICK)
                 OnMarginClick(eventArgs);
@@ -2117,7 +2137,7 @@ namespace ScintillaNET
 
             if ((scn.modificationType & NativeMethods.SC_MOD_INSERTCHECK) > 0)
             {
-                var eventArgs = new InsertCheckEventArgs(this, scn.position.ToInt32(), scn.length.ToInt32(), scn.text);
+                var eventArgs = new InsertCheckEventArgs(this, scn.position, scn.length, scn.text);
                 OnInsertCheck(eventArgs);
 
                 cachedPosition = eventArgs.CachedPosition;
@@ -2129,7 +2149,7 @@ namespace ScintillaNET
             if ((scn.modificationType & (NativeMethods.SC_MOD_BEFOREDELETE | NativeMethods.SC_MOD_BEFOREINSERT)) > 0)
             {
                 var source = (ModificationSource)(scn.modificationType & sourceMask);
-                var eventArgs = new BeforeModificationEventArgs(this, source, scn.position.ToInt32(), scn.length.ToInt32(), scn.text);
+                var eventArgs = new BeforeModificationEventArgs(this, source, scn.position, scn.length, scn.text);
 
                 eventArgs.CachedPosition = cachedPosition;
                 eventArgs.CachedText = cachedText;
@@ -2150,7 +2170,7 @@ namespace ScintillaNET
             if ((scn.modificationType & (NativeMethods.SC_MOD_DELETETEXT | NativeMethods.SC_MOD_INSERTTEXT)) > 0)
             {
                 var source = (ModificationSource)(scn.modificationType & sourceMask);
-                var eventArgs = new ModificationEventArgs(this, source, scn.position.ToInt32(), scn.length.ToInt32(), scn.text, scn.linesAdded.ToInt32());
+                var eventArgs = new ModificationEventArgs(this, source, scn.position, scn.length, scn.text, scn.linesAdded);
 
                 eventArgs.CachedPosition = cachedPosition;
                 eventArgs.CachedText = cachedText;
@@ -2175,7 +2195,7 @@ namespace ScintillaNET
 
             if ((scn.modificationType & NativeMethods.SC_MOD_CHANGEANNOTATION) > 0)
             {
-                var eventArgs = new ChangeAnnotationEventArgs(scn.line.ToInt32());
+                var eventArgs = new ChangeAnnotationEventArgs(scn.line);
                 OnChangeAnnotation(eventArgs);
             }
         }
@@ -2374,10 +2394,16 @@ namespace ScintillaNET
         /// <param name="modulePath">The native Scintilla module path.</param>
         /// <remarks>
         /// This method must be called prior to the first <see cref="Scintilla" /> control being created.
-        /// The <paramref name="modulePath" /> can be relative or absolute.
+        /// The <paramref name="modulePath" /> must be an absolute (rooted) path.
         /// </remarks>
         public static void SetModulePath(string modulePath)
         {
+            // A relative path would be resolved by LoadLibrary via the standard
+            // search order (which includes the current directory), re-introducing
+            // the classic DLL-planting hijack; require a rooted path.
+            if (modulePath != null && !Path.IsPathRooted(modulePath))
+                throw new ArgumentException("The module path must be an absolute (rooted) path.", "modulePath");
+
             if (Scintilla.modulePath == null)
             {
                 Scintilla.modulePath = modulePath;
@@ -2745,7 +2771,7 @@ namespace ScintillaNET
         {
             // A standard Windows notification and a Scintilla notification header are compatible
             NativeMethods.SCNotification scn = (NativeMethods.SCNotification)Marshal.PtrToStructure(m.LParam, typeof(NativeMethods.SCNotification));
-            if (scn.nmhdr.code >= NativeMethods.SCN_STYLENEEDED && scn.nmhdr.code <= NativeMethods.SCN_AUTOCCOMPLETED)
+            if (scn.nmhdr.code >= NativeMethods.SCN_STYLENEEDED && scn.nmhdr.code <= NativeMethods.SCN_MARGINRIGHTCLICK)
             {
                 var handler = Events[scNotificationEventKey] as EventHandler<SCNotificationEventArgs>;
                 if (handler != null)
@@ -2766,7 +2792,7 @@ namespace ScintillaNET
                         break;
 
                     case NativeMethods.SCN_STYLENEEDED:
-                        OnStyleNeeded(new StyleNeededEventArgs(this, scn.position.ToInt32()));
+                        OnStyleNeeded(new StyleNeededEventArgs(this, scn.position));
                         break;
 
                     case NativeMethods.SCN_SAVEPOINTLEFT:
@@ -2791,11 +2817,11 @@ namespace ScintillaNET
                         break;
 
                     case NativeMethods.SCN_AUTOCSELECTION:
-                        OnAutoCSelection(new AutoCSelectionEventArgs(this, scn.position.ToInt32(), scn.text, scn.ch, (ListCompletionMethod)scn.listCompletionMethod));
+                        OnAutoCSelection(new AutoCSelectionEventArgs(this, scn.position, scn.text, scn.ch, (ListCompletionMethod)scn.listCompletionMethod));
                         break;
 
                     case NativeMethods.SCN_AUTOCCOMPLETED:
-                        OnAutoCCompleted(new AutoCSelectionEventArgs(this, scn.position.ToInt32(), scn.text, scn.ch, (ListCompletionMethod)scn.listCompletionMethod));
+                        OnAutoCCompleted(new AutoCSelectionEventArgs(this, scn.position, scn.text, scn.ch, (ListCompletionMethod)scn.listCompletionMethod));
                         break;
 
                     case NativeMethods.SCN_AUTOCCANCELLED:
@@ -2807,11 +2833,11 @@ namespace ScintillaNET
                         break;
 
                     case NativeMethods.SCN_DWELLSTART:
-                        OnDwellStart(new DwellEventArgs(this, scn.position.ToInt32(), scn.x, scn.y));
+                        OnDwellStart(new DwellEventArgs(this, scn.position, scn.x, scn.y));
                         break;
 
                     case NativeMethods.SCN_DWELLEND:
-                        OnDwellEnd(new DwellEventArgs(this, scn.position.ToInt32(), scn.x, scn.y));
+                        OnDwellEnd(new DwellEventArgs(this, scn.position, scn.x, scn.y));
                         break;
 
                     case NativeMethods.SCN_DOUBLECLICK:
@@ -2819,7 +2845,7 @@ namespace ScintillaNET
                         break;
 
                     case NativeMethods.SCN_NEEDSHOWN:
-                        OnNeedShown(new NeedShownEventArgs(this, scn.position.ToInt32(), scn.length.ToInt32()));
+                        OnNeedShown(new NeedShownEventArgs(this, scn.position, scn.length));
                         break;
 
                     case NativeMethods.SCN_HOTSPOTCLICK:
@@ -3756,9 +3782,15 @@ namespace ScintillaNET
                 if (moduleHandle == IntPtr.Zero)
                 {
                     var path = GetModulePath();
+                    if (string.IsNullOrEmpty(path))
+                        throw new InvalidOperationException(
+                            "Could not resolve the Scintilla module path. Deploy the native library beside the assembly, or set an absolute path via Scintilla.SetModulePath.");
 
-                    // Load the native Scintilla library
-                    moduleHandle = NativeMethods.LoadLibrary(path);
+                    // Load the native Scintilla library by absolute path.
+                    // LOAD_WITH_ALTERED_SEARCH_PATH resolves the module's own
+                    // dependencies from its own directory rather than the default
+                    // search order (which can include the current directory).
+                    moduleHandle = NativeMethods.LoadLibraryEx(path, IntPtr.Zero, NativeMethods.LOAD_WITH_ALTERED_SEARCH_PATH);
                     if (moduleHandle == IntPtr.Zero)
                     {
                         var message = string.Format(CultureInfo.InvariantCulture, "Could not load the Scintilla module at the path '{0}'.", path);

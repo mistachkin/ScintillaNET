@@ -126,6 +126,7 @@ namespace ScintillaNET {
                 if (count < bufferRemaining) {
                     // buffer larger than read size
                     _data.CopyTo(_dataIndex, buffer, index, count);
+                    _dataIndex += count;
                     return count;
                 } else {
                     // buffer smaller or equal to read size

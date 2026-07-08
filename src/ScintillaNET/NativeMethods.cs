@@ -1791,6 +1791,26 @@ namespace ScintillaNET
         [DllImport(DLL_NAME_KERNEL32, EntryPoint = "LoadLibraryW", CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern IntPtr LoadLibrary(string lpFileName);
 
+        public const uint LOAD_WITH_ALTERED_SEARCH_PATH = 0x00000008;
+
+        [DllImport(DLL_NAME_KERNEL32, EntryPoint = "LoadLibraryExW", CharSet = CharSet.Unicode, SetLastError = true)]
+        public static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hFile, uint dwFlags);
+
+        public const uint GMEM_MOVEABLE = 0x0002;
+
+        [DllImport(DLL_NAME_KERNEL32, SetLastError = true)]
+        public static extern IntPtr GlobalAlloc(uint uFlags, UIntPtr dwBytes);
+
+        [DllImport(DLL_NAME_KERNEL32, SetLastError = true)]
+        public static extern IntPtr GlobalLock(IntPtr hMem);
+
+        [DllImport(DLL_NAME_KERNEL32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool GlobalUnlock(IntPtr hMem);
+
+        [DllImport(DLL_NAME_KERNEL32, SetLastError = true)]
+        public static extern IntPtr GlobalFree(IntPtr hMem);
+
         [DllImport(DLL_NAME_KERNEL32, EntryPoint = "RtlMoveMemory", SetLastError = true)]
         public static extern void MoveMemory(IntPtr dest, IntPtr src, int length);
 
@@ -1881,17 +1901,26 @@ namespace ScintillaNET
         public struct SCNotification
         {
             public Sci_NotifyHeader nmhdr;
-            public IntPtr position;
+            // NOTE: position/length/linesAdded/line/annotationLinesAdded are the
+            //       Scintilla "Sci_Position" fields. They are 32-bit "int" here to
+            //       match the bundled SciLexer.dll (Scintilla 3.7.2). Scintilla 4.0+
+            //       widened Sci_Position to pointer-sized (ptrdiff_t); if the native
+            //       library is ever updated to 4.x, change these five back to IntPtr
+            //       AND update the consumers that pass/read them (the event dispatch
+            //       in Scintilla.cs and Track*Text in LineCollection.cs). text,
+            //       wParam and lParam are genuine pointers (pointer-sized in every
+            //       version) and must stay IntPtr.
+            public int position;
             public int ch;
             public int modifiers;
             public int modificationType;
             public IntPtr text;
-            public IntPtr length;
-            public IntPtr linesAdded;
+            public int length;
+            public int linesAdded;
             public int message;
             public IntPtr wParam;
             public IntPtr lParam;
-            public IntPtr line;
+            public int line;
             public int foldLevelNow;
             public int foldLevelPrev;
             public int margin;
@@ -1899,7 +1928,7 @@ namespace ScintillaNET
             public int x;
             public int y;
             public int token;
-            public IntPtr annotationLinesAdded;
+            public int annotationLinesAdded;
             public int updated;
             public int listCompletionMethod;
         }

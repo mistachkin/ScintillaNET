@@ -294,7 +294,7 @@ namespace ScintillaNET
             }
             set
             {
-                var fraction = (int)(value * NativeMethods.SC_FONT_SIZE_MULTIPLIER);
+                var fraction = (int)Math.Round(value * NativeMethods.SC_FONT_SIZE_MULTIPLIER);
                 scintilla.DirectMessage(NativeMethods.SCI_STYLESETSIZEFRACTIONAL, new IntPtr(Index), new IntPtr(fraction));
             }
         }
