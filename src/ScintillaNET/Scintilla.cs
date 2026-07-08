@@ -4722,15 +4722,21 @@ namespace ScintillaNET
                 return false;
 
             var target = m.HWnd;
-            if (target == Handle)
-                return false; // the wheel is already headed for this control
+            if (target == IntPtr.Zero || target == Handle)
+                return false; // no target, or the wheel is already headed for this control
 
-            // Do not steal the wheel from this control's own child windows (e.g. an
-            // autocompletion list parented to the editor). A top-level popup merely owned by
-            // (not a child of) the editor is not covered here -- verify autocompletion-list
-            // scrolling on Windows.
-            if (target != IntPtr.Zero && NativeMethods.IsChild(new HandleRef(this, Handle), target))
+            // Do not steal the wheel from this control's own windows. Child windows are an
+            // IsChild match; the autocompletion list and call tips are top-level WS_POPUP
+            // windows OWNED by (not children of) the editor, so also walk the owner chain.
+            if (NativeMethods.IsChild(new HandleRef(this, Handle), target))
                 return false;
+            for (var owner = NativeMethods.GetWindow(target, NativeMethods.GW_OWNER);
+                owner != IntPtr.Zero;
+                owner = NativeMethods.GetWindow(owner, NativeMethods.GW_OWNER))
+            {
+                if (owner == Handle)
+                    return false;
+            }
 
             // Forward the wheel to Scintilla (a direct SendMessage bypasses the message
             // queue, so it is not re-filtered) and swallow the original so the window under

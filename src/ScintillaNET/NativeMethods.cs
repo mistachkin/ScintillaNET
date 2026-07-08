@@ -1835,6 +1835,11 @@ namespace ScintillaNET
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool IsChild(HandleRef hWndParent, IntPtr hWndChild);
 
+        public const uint GW_OWNER = 4;
+
+        [DllImport(DLL_NAME_USER32)]
+        public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
+
         [DllImport(DLL_NAME_USER32, SetLastError = true)]
         public static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);
 
