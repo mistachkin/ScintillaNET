@@ -24,7 +24,7 @@
             before the SDK props are imported, because those pull in
             Microsoft.Common.props, which computes NuGet's
             MSBuildProjectExtensionsPath from it; set any later and NuGet writes
-            to the default "obj" anyway -- and MSBuild warns MSB3539.
+            to the default "obj" anyway and MSBuild warns MSB3539.
   -->
   <PropertyGroup>
     <BaseIntermediateOutputPath>obj\NetStandard2X\</BaseIntermediateOutputPath>
