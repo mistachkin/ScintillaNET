@@ -1,35 +1,10 @@
 <Project>
 
   <!--
-      ScintillaNET_NetStandard2X.csproj: a .NET Core 3.0 build of the
-      ScintillaNET WinForms control library, produced so it can be referenced
-      by the Eagle "HotKey" plugin's NetStandard2X build.
-
-      This is intentionally NOT in the Eagle project style; ScintillaNET is an
-      external component.  It uses the SDK through explicit Sdk.props /
-      Sdk.targets imports (instead of the Sdk="..." attribute) for one reason
-      only: so BaseIntermediateOutputPath can be set BEFORE the SDK props are
-      imported (see its note below).  WinForms is enabled via "UseWindowsForms";
-      "EnableWindowsTargeting" permits the Windows Desktop reference assemblies
-      to be restored (and this project to compile) on non-Windows hosts, which
-      is all that is needed to produce the managed assembly (the native SciLexer
-      library is loaded at run time via P/Invoke, so it is not required to
-      build).
+      NOTE: This is a .NET Core 3.0 build of the ScintillaNET WinForms control
+            library.  It is referenced by NetStandard2X build of the the Eagle
+            HotKey plugin.
   -->
-
-  <!--
-      NOTE: BaseIntermediateOutputPath keeps this project's "obj" distinct from
-            the sibling .NET Framework ScintillaNET.csproj so their restore
-            outputs (project.assets.json, etc.) do not collide.  It MUST be set
-            before the SDK props are imported, because those pull in
-            Microsoft.Common.props, which computes NuGet's
-            MSBuildProjectExtensionsPath from it; set any later and NuGet writes
-            to the default "obj" anyway and MSBuild warns MSB3539.
-  -->
-  <PropertyGroup>
-    <BaseIntermediateOutputPath>obj\NetStandard2X\</BaseIntermediateOutputPath>
-  </PropertyGroup>
-
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
