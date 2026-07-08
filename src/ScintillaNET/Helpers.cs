@@ -66,24 +66,48 @@ namespace ScintillaNET
         public static unsafe byte[] ByteToCharStyles(byte* styles, byte* text, int length, Encoding encoding)
         {
             // This is used by annotations and margins to get all the styles in one call.
-            // It converts an array of styles where each element corresponds to a BYTE
-            // to an array of styles where each element corresponds to a CHARACTER.
+            // It converts an array of styles where each element corresponds to a BYTE to an
+            // array of styles where each element corresponds to a CHARACTER (UTF-16 unit).
+            //
+            // Walk the text with a single STATEFUL decoder (Decoder.Convert), which is
+            // consistent with the whole-buffer GetCharCount used to size "result" and is
+            // cross-runtime safe -- unlike per-byte Decoder.GetCharCount, which does not
+            // persist multi-byte state on .NET Core / Mono and can over-/under-count (an
+            // IndexOutOfRangeException / style desync reachable from AnnotationStyles /
+            // MarginStyles on untrusted or multibyte text). Each source byte is fed once;
+            // the units it completes (0 for a continuation byte, 1 for a BMP char, 2 for a
+            // surrogate pair) all take that byte's style. Decoder.Convert has no pointer
+            // overload on the older target frameworks, hence the copy to a managed byte[].
 
-            var bytePos = 0; // Position within text BYTES and style BYTES (should be the same)
-            var charPos = 0; // Position within style CHARACTERS
-            var decoder = encoding.GetDecoder();
             var result = new byte[encoding.GetCharCount(text, length)];
+            if (result.Length == 0)
+                return result;
 
-            while (bytePos < length)
+            var bytes = new byte[length];
+            Marshal.Copy((IntPtr)text, bytes, 0, length);
+
+            var decoder = encoding.GetDecoder();
+            var scratch = new char[2];
+            var charPos = 0;
+            int bytesUsed, units;
+            bool completed;
+
+            for (var bytePos = 0; bytePos < length && charPos < result.Length; bytePos++)
             {
-                // A completing byte yields 1 UTF-16 unit for a BMP char or 2 for a
-                // surrogate pair; write the style to each unit so "result" (sized in
-                // UTF-16 units) stays aligned.
-                var charCount = decoder.GetCharCount(text + bytePos, 1, false);
-                for (var i = 0; i < charCount; i++)
-                    result[charPos++] = *(styles + bytePos);
+                decoder.Convert(bytes, bytePos, 1, scratch, 0, 2, false, out bytesUsed, out units, out completed);
+                var style = *(styles + bytePos);
+                for (var i = 0; i < units && charPos < result.Length; i++)
+                    result[charPos++] = style;
+            }
 
-                bytePos++;
+            // Flush a trailing incomplete sequence (it decodes to a replacement char that
+            // the whole-buffer GetCharCount already counted); style it from the last byte.
+            if (charPos < result.Length)
+            {
+                decoder.Convert(bytes, length, 0, scratch, 0, 2, true, out bytesUsed, out units, out completed);
+                var style = length > 0 ? *(styles + (length - 1)) : (byte)0;
+                for (var i = 0; i < units && charPos < result.Length; i++)
+                    result[charPos++] = style;
             }
 
             return result;
@@ -93,21 +117,29 @@ namespace ScintillaNET
         {
             // This is used by annotations and margins to style all the text in one call.
             // It converts an array of styles where each element corresponds to a CHARACTER
-            // to an array of styles where each element corresponds to a BYTE.
+            // (UTF-16 unit) to an array of styles where each element corresponds to a BYTE.
+            // Uses the same stateful Decoder.Convert as ByteToCharStyles, for the same
+            // consistency / cross-runtime reasons; every byte of a character takes that
+            // character's style (the style at its first UTF-16 unit).
 
-            var bytePos = 0; // Position within text BYTES and style BYTES (should be the same)
-            var charPos = 0; // Position within style CHARACTERS
-            var decoder = encoding.GetDecoder();
             var result = new byte[length];
+            if (length == 0 || styles.Length == 0)
+                return result;
 
-            while (bytePos < length && charPos < styles.Length)
+            var bytes = new byte[length];
+            Marshal.Copy((IntPtr)text, bytes, 0, length);
+
+            var decoder = encoding.GetDecoder();
+            var scratch = new char[2];
+            var charPos = 0;
+            int bytesUsed, units;
+            bool completed;
+
+            for (var bytePos = 0; bytePos < length && charPos < styles.Length; bytePos++)
             {
                 result[bytePos] = styles[charPos];
-                // Advance the char index by the completing character's UTF-16 width
-                // (2 for a surrogate pair, 1 for a BMP char, 0 for a continuation byte).
-                charPos += decoder.GetCharCount(text + bytePos, 1, false);
-
-                bytePos++;
+                decoder.Convert(bytes, bytePos, 1, scratch, 0, 2, false, out bytesUsed, out units, out completed);
+                charPos += units;
             }
 
             return result;
@@ -476,11 +508,18 @@ namespace ScintillaNET
                     // Terminator
                     ms.WriteByte(0);
 
-                    var str = GetString(ms.Pointer, (int)ms.Length, Encoding.UTF8);
-                    // Hand the clipboard a movable copy; ms keeps and frees its own buffer.
-                    var hGlobal = CopyToMovableHGlobal(ms.Pointer, (int)ms.Length);
-                    if (hGlobal != IntPtr.Zero && NativeMethods.SetClipboardData(CF_HTML, hGlobal) == IntPtr.Zero)
-                        NativeMethods.GlobalFree(hGlobal); // clipboard rejected it; release the copy
+                    // The CF_HTML header reserves 8-digit offset fields; a serialized
+                    // payload of 100,000,000+ bytes overflows them ("D8" is a minimum,
+                    // not a maximum, width) and corrupts the header. For such
+                    // pathologically large documents, skip the HTML clipboard format
+                    // rather than publishing a malformed payload.
+                    if (ms.Length <= 99999999)
+                    {
+                        // Hand the clipboard a movable copy; ms keeps and frees its own buffer.
+                        var hGlobal = CopyToMovableHGlobal(ms.Pointer, (int)ms.Length);
+                        if (hGlobal != IntPtr.Zero && NativeMethods.SetClipboardData(CF_HTML, hGlobal) == IntPtr.Zero)
+                            NativeMethods.GlobalFree(hGlobal); // clipboard rejected it; release the copy
+                    }
                 }
             }
             catch (Exception ex)
@@ -514,10 +553,16 @@ namespace ScintillaNET
 
                 using (var graphics = scintilla.CreateGraphics())
                 using (var font = new Font(styles[Style.Default].FontName, styles[Style.Default].SizeF, fontStyle))
+                using (var format = new StringFormat(StringFormat.GenericTypographic))
                 {
-                    var width = graphics.MeasureString(" ", font).Width;
-                    twips = (int)((width / graphics.DpiX) * 1440);
-                    // TODO The twips value calculated seems too small on my computer
+                    // Graphics.MeasureString ignores trailing whitespace unless
+                    // MeasureTrailingSpaces is set, so measuring a lone " " returned
+                    // almost nothing -- which made the tab width far too small. Measure
+                    // the real advance width of a space, then convert pixels -> twips
+                    // (1 inch = 1440 twips).
+                    format.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces;
+                    var width = graphics.MeasureString(" ", font, PointF.Empty, format).Width;
+                    twips = (int)Math.Round((width / graphics.DpiX) * 1440);
                 }
 
                 // Write RTF
@@ -1079,7 +1124,13 @@ namespace ScintillaNET
             scintilla.DirectMessage(NativeMethods.SCI_COLOURISE, new IntPtr(startBytePos), new IntPtr(endBytePos));
 
             var byteLength = (endBytePos - startBytePos);
-            var buffer = new byte[(byteLength * 2) + (addLineBreak ? 4 : 0) + 2];
+            // 2 bytes per source byte (interleaved char + style) plus the optional line
+            // break (4) and NUL terminator (2). Compute in 64-bit and reject a range too
+            // large for an int-sized buffer rather than overflowing to a negative length.
+            var bufferLength = ((long)byteLength * 2) + (addLineBreak ? 4 : 0) + 2;
+            if (bufferLength > int.MaxValue)
+                throw new ArgumentException("The styled range is too large to serialize.");
+            var buffer = new byte[(int)bufferLength];
             fixed (byte* bp = buffer)
             {
                 NativeMethods.Sci_TextRange* tr = stackalloc NativeMethods.Sci_TextRange[1];
@@ -1095,7 +1146,10 @@ namespace ScintillaNET
             // We do this when this range is part of a rectangular selection.
             if (addLineBreak)
             {
-                var style = buffer[byteLength - 1];
+                // An empty rectangular-selection row has no preceding style cell
+                // (Release strips the assert above), so fall back to style 0 rather
+                // than indexing buffer[-1].
+                var style = byteLength > 0 ? buffer[byteLength - 1] : (byte)0;
 
                 buffer[byteLength++] = (byte)'\r';
                 buffer[byteLength++] = style;

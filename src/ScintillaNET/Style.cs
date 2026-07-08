@@ -178,7 +178,9 @@ namespace ScintillaNET
             get
             {
                 var length = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETFONT, new IntPtr(Index), IntPtr.Zero).ToInt32();
-                var font = new byte[length];
+                // SCI_STYLEGETFONT returns the name length but writes length+1 bytes
+                // (name plus a NUL terminator), so the buffer needs the extra byte.
+                var font = new byte[length + 1];
                 unsafe
                 {
                     fixed (byte* bp = font)

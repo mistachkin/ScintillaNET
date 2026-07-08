@@ -100,31 +100,47 @@ namespace ScintillaNET
 
             // Adjust to the nearest line start
             var line = LineFromCharPosition(pos);
-            var bytePos = scintilla.DirectMessage(NativeMethods.SCI_POSITIONFROMLINE, new IntPtr(line)).ToInt32();
+            var lineByteStart = scintilla.DirectMessage(NativeMethods.SCI_POSITIONFROMLINE, new IntPtr(line)).ToInt32();
             pos -= CharPositionFromLine(line);
+
+            if (pos <= 0)
+                return lineByteStart;
 
             // Optimization when the line contains NO multibyte characters
             if (!LineContainsMultibyteChar(line))
-                return (bytePos + pos);
+                return (lineByteStart + pos);
 
-            while (pos > 0)
+            // Find the byte offset within the line whose CHARACTER count equals "pos",
+            // using the same whole-buffer decoder that ByteToCharPosition / GetCharCount
+            // use. This makes CharToBytePosition the exact inverse of ByteToCharPosition,
+            // so the map stays self-consistent even for malformed UTF-8 -- where native
+            // SCI_POSITIONRELATIVE classifies invalid bytes differently than the .NET
+            // decoder that produces the char counts (and the "Text" a caller sees).
+            var lineByteLength = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(line)).ToInt32();
+            var ptr = scintilla.DirectMessage(NativeMethods.SCI_GETRANGEPOINTER, new IntPtr(lineByteStart), new IntPtr(lineByteLength));
+
+            var lo = 0;
+            var hi = lineByteLength;
+            while (lo < hi)
             {
-                // Move forward one whole character. SCI_POSITIONRELATIVE moves by
-                // code points, but "pos" counts UTF-16 code units (to round-trip with
-                // ByteToCharPosition / GetCharCount), so decrement by the character's
-                // UTF-16 width: a 4-byte UTF-8 sequence is a surrogate pair (2 units),
-                // any shorter sequence is a single unit.
-                var nextBytePos = scintilla.DirectMessage(NativeMethods.SCI_POSITIONRELATIVE, new IntPtr(bytePos), new IntPtr(1)).ToInt32();
-                pos -= ((nextBytePos - bytePos) == 4 ? 2 : 1);
-                bytePos = nextBytePos;
+                var mid = lo + ((hi - lo) / 2);
+                if (GetCharCount(ptr, mid, scintilla.Encoding) < pos)
+                    lo = mid + 1;
+                else
+                    hi = mid;
             }
 
-            return bytePos;
+            return lineByteStart + lo;
         }
 
         private void DeletePerLine(int index)
         {
             Debug.Assert(index != 0);
+
+            // Bounds guard (Debug.Assert is stripped in Release): refuse an index that
+            // would walk off perLineData -- CharLineLength(index) reads perLineData[index+1].
+            if (index < 1 || index > perLineData.Count - 2)
+                throw new ArgumentOutOfRangeException("index");
 
             MoveStep(index);
 
@@ -367,14 +383,25 @@ namespace ScintillaNET
 
         private void ScnModified(NativeMethods.SCNotification scn)
         {
-            if ((scn.modificationType & NativeMethods.SC_MOD_DELETETEXT) > 0)
+            try
             {
-                TrackDeleteText(scn);
-            }
+                if ((scn.modificationType & NativeMethods.SC_MOD_DELETETEXT) > 0)
+                {
+                    TrackDeleteText(scn);
+                }
 
-            if ((scn.modificationType & NativeMethods.SC_MOD_INSERTTEXT) > 0)
+                if ((scn.modificationType & NativeMethods.SC_MOD_INSERTTEXT) > 0)
+                {
+                    TrackInsertText(scn);
+                }
+            }
+            catch (Exception)
             {
-                TrackInsertText(scn);
+                // Never let a tracking fault leave the managed line mirror permanently
+                // out of sync with native -- that would make every subsequent edit
+                // re-fault (a persistent DoS on malformed or pathological content).
+                // Resync the entire mirror from native instead.
+                RebuildLineData();
             }
         }
 
@@ -394,7 +421,10 @@ namespace ScintillaNET
                 var lineByteLength = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(startLine)).ToInt32();
                 AdjustLineLength(startLine, GetCharCount(lineByteStart, lineByteLength) - CharLineLength(startLine));
 
-                var linesRemoved = scn.linesAdded * -1;
+                // Bound the removal to the lines the mirror actually has after
+                // startLine, so a line delta larger than the tracked count cannot
+                // walk DeletePerLine off the end of perLineData.
+                var linesRemoved = Math.Min(scn.linesAdded * -1, (Count - 1) - startLine);
                 for (int i = 0; i < linesRemoved; i++)
                 {
                     // Deleted line

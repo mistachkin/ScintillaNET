@@ -1114,6 +1114,7 @@ namespace ScintillaNET
         public const int WM_RBUTTONDBLCLK = 0x0206;
         public const int WM_MBUTTONDBLCLK = 0x0209;
         public const int WM_XBUTTONDBLCLK = 0x020D;
+        public const int WM_MOUSEWHEEL = 0x020A;
         public const int WM_USER = 0x0400;
         public const int WM_REFLECT = WM_USER + 0x1C00;
 
@@ -1829,6 +1830,10 @@ namespace ScintillaNET
 
         [DllImport(DLL_NAME_USER32, EntryPoint = "SendMessageW", CharSet = CharSet.Unicode, SetLastError = true)]
         public static extern IntPtr SendMessage(HandleRef hWnd, int msg, IntPtr wParam, IntPtr lParam);
+
+        [DllImport(DLL_NAME_USER32)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool IsChild(HandleRef hWndParent, IntPtr hWndChild);
 
         [DllImport(DLL_NAME_USER32, SetLastError = true)]
         public static extern IntPtr SetClipboardData(uint uFormat, IntPtr hMem);

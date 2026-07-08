@@ -69,8 +69,11 @@ namespace ScintillaNET
             if ((position + count) > capacity)
             {
                 // Realloc buffer
-                var minCapacity = (position + count);
-                var newCapacity = (capacity * 2);
+                // Grow with 64-bit intermediates so the capacity math cannot overflow
+                // to a negative size (which AllocHGlobal would treat as a huge SIZE_T,
+                // i.e. either OOM or an under-sized buffer followed by an OOB write).
+                var minCapacity = (int)Math.Min((long)position + count, int.MaxValue);
+                var newCapacity = (int)Math.Min((long)capacity * 2, int.MaxValue);
                 if (newCapacity < minCapacity)
                     newCapacity = minCapacity;
 

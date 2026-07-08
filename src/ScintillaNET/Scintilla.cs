@@ -22,7 +22,7 @@ namespace ScintillaNET
     /// Represents a Scintilla editor control.
     /// </summary>
     [Docking(DockingBehavior.Ask)]
-    public class Scintilla : Control
+    public class Scintilla : Control, IMessageFilter
     {
         #region Fields
 
@@ -70,6 +70,8 @@ namespace ScintillaNET
 
         // The goods
         private IntPtr sciPtr;
+        private bool mouseWheelCaptures = true;
+        private bool mouseWheelFilterAdded;
         private BorderStyle borderStyle;
 
         // Set style 
@@ -952,8 +954,11 @@ namespace ScintillaNET
                 DirectMessage(NativeMethods.SCI_GETTEXTRANGE, IntPtr.Zero, new IntPtr(range));
                 var str = Helpers.GetString(new IntPtr(bp), length, Encoding);
                 // Return the full Unicode code point: a 4-byte UTF-8 character decodes
-                // to a surrogate pair, and str[0] alone would be just the high surrogate.
-                return char.ConvertToUtf32(str, 0);
+                // to a surrogate pair. Guard against malformed input (a lone surrogate,
+                // which char.ConvertToUtf32 would throw on) by returning the raw unit.
+                return (str.Length >= 2 && char.IsSurrogatePair(str[0], str[1]))
+                    ? char.ConvertToUtf32(str[0], str[1])
+                    : str[0];
             }
         }
 
@@ -1683,6 +1688,12 @@ namespace ScintillaNET
             // processing of AllowDrop.
             NativeMethods.RevokeDragDrop(Handle);
 
+            // Match native Scintilla's mouse-wheel-capture flag to our property, and arm the
+            // application message filter that makes MouseWheelCaptures actually work under
+            // Windows Forms (the native flag alone is inert there).
+            DirectMessage(NativeMethods.SCI_SETMOUSEWHEELCAPTURES, mouseWheelCaptures ? new IntPtr(1) : IntPtr.Zero);
+            UpdateMouseWheelFilter();
+
             base.OnHandleCreated(e);
         }
 
@@ -1695,6 +1706,14 @@ namespace ScintillaNET
             // destroy-handle workaround keeps the native window alive, in which case
             // the re-fetch simply returns the same pointer.
             sciPtr = IntPtr.Zero;
+
+            // Drop the application message filter along with the window it tracked, so a
+            // destroyed control is not left rooted in Application's filter list.
+            if (mouseWheelFilterAdded)
+            {
+                Application.RemoveMessageFilter(this);
+                mouseWheelFilterAdded = false;
+            }
 
             base.OnHandleDestroyed(e);
         }
@@ -4628,10 +4647,10 @@ namespace ScintillaNET
             }
         }
 
-        // The MouseWheelCaptures property doesn't seem to work correctly in Windows Forms so hiding for now...
-        // P.S. I'm avoiding the MouseDownCaptures property (SCI_SETMOUSEDOWNCAPTURES & SCI_GETMOUSEDOWNCAPTURES) for the same reason... I don't expect it to work in Windows Forms.
+        // Note: MouseDownCaptures (SCI_SET/GETMOUSEDOWNCAPTURES) is intentionally not
+        // surfaced -- like the mouse wheel, its native flag is inert under Windows Forms,
+        // and (unlike the wheel) it has no message-filter workaround implemented here.
 
-        /* 
         /// <summary>
         /// Gets or sets whether to respond to mouse wheel messages if the control has focus but the mouse is not currently over the control.
         /// </summary>
@@ -4639,7 +4658,13 @@ namespace ScintillaNET
         /// true to respond to mouse wheel messages even when the mouse is not currently over the control; otherwise, false.
         /// The default is true.
         /// </returns>
-        /// <remarks>Scintilla will still react to the mouse wheel if the mouse pointer is over the editor window.</remarks>
+        /// <remarks>
+        /// Scintilla still reacts to the mouse wheel when the pointer is over the editor window.
+        /// The native SCI_SETMOUSEWHEELCAPTURES flag alone has no effect in a Windows Forms host
+        /// (Windows Forms / the OS route WM_MOUSEWHEEL to the window under the pointer), so this
+        /// behavior is delivered by an application message filter that forwards the wheel to a
+        /// focused Scintilla when the pointer is over another window.
+        /// </remarks>
         [DefaultValue(true)]
         [Category("Mouse")]
         [Description("Enable or disable mouse wheel support when the mouse is outside the control bounds, but the control still has focus.")]
@@ -4647,15 +4672,72 @@ namespace ScintillaNET
         {
             get
             {
-                return DirectMessage(NativeMethods.SCI_GETMOUSEWHEELCAPTURES) != IntPtr.Zero;
+                return mouseWheelCaptures;
             }
             set
             {
-                var mouseWheelCaptures = (value ? new IntPtr(1) : IntPtr.Zero);
-                DirectMessage(NativeMethods.SCI_SETMOUSEWHEELCAPTURES, mouseWheelCaptures);
+                if (mouseWheelCaptures == value)
+                    return;
+
+                mouseWheelCaptures = value;
+
+                // Keep native Scintilla consistent for any path where the message does reach
+                // its own window procedure (e.g. classic focus-based wheel routing).
+                if (IsHandleCreated)
+                    DirectMessage(NativeMethods.SCI_SETMOUSEWHEELCAPTURES, value ? new IntPtr(1) : IntPtr.Zero);
+
+                UpdateMouseWheelFilter();
             }
         }
-        */
+
+        private void UpdateMouseWheelFilter()
+        {
+            // The application-wide message filter is only needed while this control both
+            // wants to capture the wheel and actually has a window. Add/remove it to match,
+            // so we never leave a filter (which roots this control in Application) registered
+            // when it is not wanted.
+            var wanted = mouseWheelCaptures && IsHandleCreated;
+            if (wanted == mouseWheelFilterAdded)
+                return;
+
+            if (wanted)
+                Application.AddMessageFilter(this);
+            else
+                Application.RemoveMessageFilter(this);
+
+            mouseWheelFilterAdded = wanted;
+        }
+
+        bool IMessageFilter.PreFilterMessage(ref Message m)
+        {
+            // Delivers the "capture the wheel while focused even if the pointer is over
+            // another window" behavior that the native SCI_SETMOUSEWHEELCAPTURES flag cannot
+            // provide in a Windows Forms host. This runs for EVERY message in the
+            // application, so it bails out immediately and only ever acts in the single
+            // unambiguous case.
+            if (m.Msg != NativeMethods.WM_MOUSEWHEEL)
+                return false;
+
+            if (!mouseWheelCaptures || !Focused || !IsHandleCreated)
+                return false;
+
+            var target = m.HWnd;
+            if (target == Handle)
+                return false; // the wheel is already headed for this control
+
+            // Do not steal the wheel from this control's own child windows (e.g. an
+            // autocompletion list parented to the editor). A top-level popup merely owned by
+            // (not a child of) the editor is not covered here -- verify autocompletion-list
+            // scrolling on Windows.
+            if (target != IntPtr.Zero && NativeMethods.IsChild(new HandleRef(this, Handle), target))
+                return false;
+
+            // Forward the wheel to Scintilla (a direct SendMessage bypasses the message
+            // queue, so it is not re-filtered) and swallow the original so the window under
+            // the pointer does not also scroll.
+            NativeMethods.SendMessage(new HandleRef(this, Handle), NativeMethods.WM_MOUSEWHEEL, m.WParam, m.LParam);
+            return true;
+        }
 
         /// <summary>
         /// Gets or sets whether multiple selection is enabled.
@@ -6118,7 +6200,6 @@ namespace ScintillaNET
         }
 
 
-        // TODO This isn't working in my tests. Could be Windows Forms interfering.
         /// <summary>
         /// Occurs when the mouse was right-clicked inside a margin that was marked as sensitive.
         /// </summary>
