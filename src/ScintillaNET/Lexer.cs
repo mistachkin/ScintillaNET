@@ -175,4 +175,76 @@ namespace ScintillaNET
         /// </summary>
         R = NativeMethods.SCLEX_R
     }
+
+    // Maps the legacy numeric Lexer enum to the Lexilla lexer name passed to CreateLexer
+    // (Scintilla 5.x installs lexers by name via Lexilla, not by numeric id). Names were taken
+    // from the Scintilla 4.4.6 LexerModule registrations; if a lexer ever fails to load,
+    // cross-check against Lexilla's GetLexerName. Lexer.Container has no entry -- container
+    // (host-driven) styling installs no lexer at all.
+    internal static class LexerNames
+    {
+        private static readonly Dictionary<Lexer, string> toName = new Dictionary<Lexer, string>
+        {
+            { Lexer.Null, "null" },
+            { Lexer.Ada, "ada" },
+            { Lexer.Asm, "asm" },
+            { Lexer.Batch, "batch" },
+            { Lexer.Clw, "clarion" },
+            { Lexer.ClwNoCase, "clarionnocase" },
+            { Lexer.Cpp, "cpp" },
+            { Lexer.Css, "css" },
+            { Lexer.Fortran, "fortran" },
+            { Lexer.FreeBasic, "freebasic" },
+            { Lexer.Html, "hypertext" },
+            { Lexer.Json, "json" },
+            { Lexer.Lisp, "lisp" },
+            { Lexer.Lua, "lua" },
+            { Lexer.Pascal, "pascal" },
+            { Lexer.Perl, "perl" },
+            { Lexer.PhpScript, "phpscript" },
+            { Lexer.PowerShell, "powershell" },
+            { Lexer.Properties, "props" },
+            { Lexer.PureBasic, "purebasic" },
+            { Lexer.Python, "python" },
+            { Lexer.Ruby, "ruby" },
+            { Lexer.Smalltalk, "smalltalk" },
+            { Lexer.Sql, "sql" },
+            { Lexer.Tcl, "tcl" },
+            { Lexer.Vb, "vb" },
+            { Lexer.VbScript, "vbscript" },
+            { Lexer.Verilog, "verilog" },
+            { Lexer.Xml, "xml" },
+            { Lexer.BlitzBasic, "blitzbasic" },
+            { Lexer.Markdown, "markdown" },
+            { Lexer.R, "r" },
+        };
+
+        private static readonly Dictionary<string, Lexer> toLexer = BuildReverse();
+
+        // The Lexilla lexer name for an enum value, or null for Container (no lexer installed).
+        public static string GetName(Lexer lexer)
+        {
+            string name;
+            return toName.TryGetValue(lexer, out name) ? name : null;
+        }
+
+        // The enum value for a lexer name; Container when the name is empty or unrecognized.
+        public static Lexer GetLexer(string name)
+        {
+            if (String.IsNullOrEmpty(name))
+                return Lexer.Container;
+
+            Lexer lexer;
+            return toLexer.TryGetValue(name, out lexer) ? lexer : Lexer.Container;
+        }
+
+        private static Dictionary<string, Lexer> BuildReverse()
+        {
+            var reverse = new Dictionary<string, Lexer>(StringComparer.Ordinal);
+            foreach (var pair in toName)
+                reverse[pair.Value] = pair.Key;
+
+            return reverse;
+        }
+    }
 }

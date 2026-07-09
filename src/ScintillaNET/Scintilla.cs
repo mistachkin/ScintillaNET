@@ -34,6 +34,8 @@ namespace ScintillaNET
         private static string modulePath;
         private static IntPtr moduleHandle;
         private static NativeMethods.Scintilla_DirectFunction directFunction;
+        private static IntPtr lexillaHandle;
+        private static NativeMethods.Lexilla_CreateLexer createLexer;
 
         // Events
         private static readonly object scNotificationEventKey = new object();
@@ -75,11 +77,11 @@ namespace ScintillaNET
         private BorderStyle borderStyle;
 
         // Set style 
-        private int stylingPosition;
-        private int stylingBytePosition;
+        private long stylingPosition;
+        private long stylingBytePosition;
 
         // Modified event optimization
-        private int? cachedPosition = null;
+        private long? cachedPosition = null;
         private string cachedText = null;
 
         // Double-click
@@ -121,7 +123,7 @@ namespace ScintillaNET
         /// <param name="caret">The zero-based document position to end the selection.</param>
         /// <param name="anchor">The zero-based document position to start the selection.</param>
         /// <remarks>A main selection must first have been set by a call to <see cref="SetSelection" />.</remarks>
-        public void AddSelection(int caret, int anchor)
+        public void AddSelection(long caret, long anchor)
         {
             var textLength = TextLength;
             caret = Helpers.Clamp(caret, 0, textLength);
@@ -273,7 +275,7 @@ namespace ScintillaNET
             if (lenEntered > 0)
             {
                 // Convert to bytes by counting back the specified number of characters
-                var endPos = DirectMessage(NativeMethods.SCI_GETCURRENTPOS).ToInt32();
+                var endPos = DirectMessage(NativeMethods.SCI_GETCURRENTPOS).ToInt64();
                 var startPos = endPos;
                 // "lenEntered" is a count of UTF-16 code units; SCI_POSITIONRELATIVE
                 // moves by whole code points, so count each 4-byte (surrogate-pair)
@@ -281,12 +283,12 @@ namespace ScintillaNET
                 var remaining = lenEntered;
                 while (remaining > 0)
                 {
-                    var prevPos = DirectMessage(NativeMethods.SCI_POSITIONRELATIVE, new IntPtr(startPos), new IntPtr(-1)).ToInt32();
+                    var prevPos = DirectMessage(NativeMethods.SCI_POSITIONRELATIVE, new IntPtr(startPos), new IntPtr(-1)).ToInt64();
                     remaining -= ((startPos - prevPos) == 4 ? 2 : 1);
                     startPos = prevPos;
                 }
 
-                lenEntered = (endPos - startPos);
+                lenEntered = (int)(endPos - startPos);
             }
 
             var bytes = Helpers.GetBytes(list, Encoding, true);
@@ -320,7 +322,7 @@ namespace ScintillaNET
         /// Styles the specified character position with the <see cref="Style.BraceBad" /> style when there is an unmatched brace.
         /// </summary>
         /// <param name="position">The zero-based document position of the unmatched brace character or <seealso cref="InvalidPosition"/> to remove the highlight.</param>
-        public void BraceBadLight(int position)
+        public void BraceBadLight(long position)
         {
             position = Helpers.Clamp(position, -1, TextLength);
             if (position > 0)
@@ -336,7 +338,7 @@ namespace ScintillaNET
         /// <param name="position2">The zero-based document position of the close brace character.</param>
         /// <remarks>Brace highlighting can be removed by specifying <see cref="InvalidPosition" /> for <paramref name="position1" /> and <paramref name="position2" />.</remarks>
         /// <seealso cref="HighlightGuide" />
-        public void BraceHighlight(int position1, int position2)
+        public void BraceHighlight(long position1, long position2)
         {
             var textLength = TextLength;
 
@@ -358,12 +360,12 @@ namespace ScintillaNET
         /// <param name="position">The zero-based document position of a brace character to start the search from for a matching brace character.</param>
         /// <returns>The zero-based document position of the corresponding matching brace or <see cref="InvalidPosition" /> it no matching brace could be found.</returns>
         /// <remarks>A match only occurs if the style of the matching brace is the same as the starting brace. Nested braces are handled correctly.</remarks>
-        public int BraceMatch(int position)
+        public long BraceMatch(long position)
         {
             position = Helpers.Clamp(position, 0, TextLength);
             position = Lines.CharToBytePosition(position);
-            
-            var match = DirectMessage(NativeMethods.SCI_BRACEMATCH, new IntPtr(position), IntPtr.Zero).ToInt32();
+
+            var match = DirectMessage(NativeMethods.SCI_BRACEMATCH, new IntPtr(position), IntPtr.Zero).ToInt64();
             if (match > 0)
                 match = Lines.ByteToCharPosition(match);
 
@@ -428,7 +430,7 @@ namespace ScintillaNET
         /// Call tips can contain multiple lines separated by '\n' characters. Do not include '\r', as this will most likely print as an empty box.
         /// The '\t' character is supported and the size can be set by using <see cref="CallTipTabSize" />.
         /// </remarks>
-        public unsafe void CallTipShow(int posStart, string definition)
+        public unsafe void CallTipShow(long posStart, string definition)
         {
             posStart = Helpers.Clamp(posStart, 0, TextLength);
             if (definition == null)
@@ -461,7 +463,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="startPos">The zero-based document position at which the lexer state change starts.</param>
         /// <param name="endPos">The zero-based document position at which the lexer state change ends.</param>
-        public void ChangeLexerState(int startPos, int endPos)
+        public void ChangeLexerState(long startPos, long endPos)
         {
             var textLength = TextLength;
             startPos = Helpers.Clamp(startPos, 0, textLength);
@@ -479,9 +481,9 @@ namespace ScintillaNET
         /// <param name="x">The x pixel coordinate within the client rectangle of the control.</param>
         /// <param name="y">The y pixel coordinate within the client rectangle of the control.</param>
         /// <returns>The zero-based document position of the nearest character to the point specified.</returns>
-        public int CharPositionFromPoint(int x, int y)
+        public long CharPositionFromPoint(int x, int y)
         {
-            var pos = DirectMessage(NativeMethods.SCI_CHARPOSITIONFROMPOINT, new IntPtr(x), new IntPtr(y)).ToInt32();
+            var pos = DirectMessage(NativeMethods.SCI_CHARPOSITIONFROMPOINT, new IntPtr(x), new IntPtr(y)).ToInt64();
             pos = Lines.ByteToCharPosition(pos);
 
             return pos;
@@ -494,9 +496,9 @@ namespace ScintillaNET
         /// <param name="x">The x pixel coordinate within the client rectangle of the control.</param>
         /// <param name="y">The y pixel coordinate within the client rectangle of the control.</param>
         /// <returns>The zero-based document position of the nearest character to the point specified when near a character; otherwise, -1.</returns>
-        public int CharPositionFromPointClose(int x, int y)
+        public long CharPositionFromPointClose(int x, int y)
         {
-            var pos = DirectMessage(NativeMethods.SCI_CHARPOSITIONFROMPOINTCLOSE, new IntPtr(x), new IntPtr(y)).ToInt32();
+            var pos = DirectMessage(NativeMethods.SCI_CHARPOSITIONFROMPOINTCLOSE, new IntPtr(x), new IntPtr(y)).ToInt64();
             if (pos >= 0)
                 pos = Lines.ByteToCharPosition(pos);
 
@@ -581,7 +583,7 @@ namespace ScintillaNET
         /// <param name="startPos">The zero-based document position at which to start styling.</param>
         /// <param name="endPos">The zero-based document position at which to stop styling (exclusive).</param>
         /// <remarks>This will also cause fold levels in the range specified to be reset.</remarks>
-        public void Colorize(int startPos, int endPos)
+        public void Colorize(long startPos, long endPos)
         {
             var textLength = TextLength;
             startPos = Helpers.Clamp(startPos, 0, textLength);
@@ -652,7 +654,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="start">The zero-based character position in the document to start copying.</param>
         /// <param name="end">The zero-based character position (exclusive) in the document to stop copying.</param>
-        public void CopyRange(int start, int end)
+        public void CopyRange(long start, long end)
         {
             var textLength = TextLength;
             start = Helpers.Clamp(start, 0, textLength);
@@ -671,7 +673,7 @@ namespace ScintillaNET
         /// <param name="start">The zero-based character position in the document to start copying.</param>
         /// <param name="end">The zero-based character position (exclusive) in the document to stop copying.</param>
         /// <param name="format">One of the <see cref="CopyFormat" /> enumeration values.</param>
-        public void CopyRange(int start, int end, CopyFormat format)
+        public void CopyRange(long start, long end, CopyFormat format)
         {
             var textLength = TextLength;
             start = Helpers.Clamp(start, 0, textLength);
@@ -702,7 +704,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="length">The initial number of characters to allocate.</param>
         /// <returns>A new <see cref="ILoader" /> object, or null if the loader could not be created.</returns>
-        public ILoader CreateLoader(int length)
+        public ILoader CreateLoader(long length)
         {
             length = Helpers.ClampMin(length, 0);
             var ptr = DirectMessage(NativeMethods.SCI_CREATELOADER, new IntPtr(length));
@@ -725,7 +727,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="position">The zero-based character position to start deleting.</param>
         /// <param name="length">The number of characters to delete.</param>
-        public void DeleteRange(int position, int length)
+        public void DeleteRange(long position, long length)
         {
             var textLength = TextLength;
             position = Helpers.Clamp(position, 0, textLength);
@@ -850,10 +852,10 @@ namespace ScintillaNET
         /// <param name="displayLine">The zero-based display line index.</param>
         /// <returns>The zero-based document line index.</returns>
         /// <seealso cref="Line.DisplayIndex" />
-        public int DocLineFromVisible(int displayLine)
+        public long DocLineFromVisible(long displayLine)
         {
             displayLine = Helpers.Clamp(displayLine, 0, Lines.Count);
-            return DirectMessage(NativeMethods.SCI_DOCLINEFROMVISIBLE, new IntPtr(displayLine)).ToInt32();
+            return DirectMessage(NativeMethods.SCI_DOCLINEFROMVISIBLE, new IntPtr(displayLine)).ToInt64();
         }
 
         /// <summary>
@@ -929,13 +931,13 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="position">The zero-based document position of the character to get.</param>
         /// <returns>The character at the specified <paramref name="position" />.</returns>
-        public unsafe int GetCharAt(int position)
+        public unsafe int GetCharAt(long position)
         {
             position = Helpers.Clamp(position, 0, TextLength);
             position = Lines.CharToBytePosition(position);
 
-            var nextPosition = DirectMessage(NativeMethods.SCI_POSITIONRELATIVE, new IntPtr(position), new IntPtr(1)).ToInt32();
-            var length = (nextPosition - position);
+            var nextPosition = DirectMessage(NativeMethods.SCI_POSITIONRELATIVE, new IntPtr(position), new IntPtr(1)).ToInt64();
+            var length = (int)(nextPosition - position);
             if (length <= 1)
             {
                 // Position is at single-byte character
@@ -946,12 +948,12 @@ namespace ScintillaNET
             var bytes = new byte[length + 1];
             fixed (byte* bp = bytes)
             {
-                NativeMethods.Sci_TextRange* range = stackalloc NativeMethods.Sci_TextRange[1];
-                range->chrg.cpMin = position;
-                range->chrg.cpMax = nextPosition;
+                NativeMethods.Sci_TextRangeFull* range = stackalloc NativeMethods.Sci_TextRangeFull[1];
+                range->chrg.cpMin = new IntPtr(position);
+                range->chrg.cpMax = new IntPtr(nextPosition);
                 range->lpstrText = new IntPtr(bp);
 
-                DirectMessage(NativeMethods.SCI_GETTEXTRANGE, IntPtr.Zero, new IntPtr(range));
+                DirectMessage(NativeMethods.SCI_GETTEXTRANGEFULL, IntPtr.Zero, new IntPtr(range));
                 var str = Helpers.GetString(new IntPtr(bp), length, Encoding);
                 // Return the full Unicode code point: a 4-byte UTF-8 character decodes
                 // to a surrogate pair. Guard against malformed input (a lone surrogate,
@@ -967,55 +969,181 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="position">The zero-based document position to get the column for.</param>
         /// <returns>The number of columns from the start of the line to the specified document <paramref name="position" />.</returns>
-        public int GetColumn(int position)
+        public long GetColumn(long position)
         {
             position = Helpers.Clamp(position, 0, TextLength);
             position = Lines.CharToBytePosition(position);
-            return DirectMessage(NativeMethods.SCI_GETCOLUMN, new IntPtr(position)).ToInt32();
+            return DirectMessage(NativeMethods.SCI_GETCOLUMN, new IntPtr(position)).ToInt64();
         }
 
         /// <summary>
         /// Returns the last document position likely to be styled correctly.
         /// </summary>
         /// <returns>The zero-based document position of the last styled character.</returns>
-        public int GetEndStyled()
+        public long GetEndStyled()
         {
-            var pos = DirectMessage(NativeMethods.SCI_GETENDSTYLED).ToInt32();
+            var pos = DirectMessage(NativeMethods.SCI_GETENDSTYLED).ToInt64();
             return Lines.ByteToCharPosition(pos);
         }
 
         private static string GetModulePath()
         {
-            if (modulePath != null)
-                return modulePath;
+            return GetNativePath("Scintilla");
+        }
 
-            Assembly assembly = typeof(Scintilla).Assembly;
-
-            string directory = (assembly != null) ?
-                Path.GetDirectoryName(assembly.Location) : null;
-
+        // Resolves the on-disk path of a native module ("Scintilla" or "Lexilla") for the
+        // current OS and process architecture. Prefers a RID-style layout
+        // (runtimes/<os>-<arch>/native/<file>) beside the assembly (or the SetModulePath
+        // override directory), falling back to a flat file beside it. Per-OS file naming keeps
+        // this usable if the component is ever hosted on a ported WinForms outside Windows.
+        private static string GetNativePath(string baseName)
+        {
+            var directory = GetNativeDirectory();
             if (String.IsNullOrEmpty(directory))
                 return null;
 
-            if (String.Equals(
-                    Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE"),
-                    "ARM64", StringComparison.OrdinalIgnoreCase))
+            var fileName = GetNativeFileName(baseName);
+
+            var ridPath = Path.Combine(Path.Combine(Path.Combine(Path.Combine(
+                directory, "runtimes"), GetOsToken() + "-" + GetArchToken()), "native"), fileName);
+            if (File.Exists(ridPath))
+                return ridPath;
+
+            // Flat file beside the assembly (portable default).
+            var flatPath = Path.Combine(directory, fileName);
+            if (File.Exists(flatPath))
+                return flatPath;
+
+            // Windows side-by-side arch-suffixed fallback (e.g. Scintilla64.dll /
+            // ScintillaARM64.dll) -- matches hosts that deploy every architecture flat in one
+            // directory and preload the arch-appropriate one (e.g. the HotKey plugin).
+            if (GetOsToken() == "win")
             {
-                return Path.Combine(directory, "SciLexerARM64.dll");
+                var suffixedPath = Path.Combine(directory, baseName + GetWinArchSuffix() + ".dll");
+                if (File.Exists(suffixedPath))
+                    return suffixedPath;
             }
 
-            if (String.Equals(
-                    Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE"),
-                    "ARM", StringComparison.OrdinalIgnoreCase))
-            {
-                return Path.Combine(directory, "SciLexerARM.dll");
-            }
-
-            if (IntPtr.Size == sizeof(int))
-                return Path.Combine(directory, "SciLexer.dll");
-            else
-                return Path.Combine(directory, "SciLexer64.dll");
+            // Nothing on disk; return the flat path so the loader reports a clear error.
+            return flatPath;
         }
+
+        // Windows side-by-side arch suffix (SciLexer64.dll / SciLexerARM64.dll style):
+        // x86 = "", x64 = "64", arm = "ARM", arm64 = "ARM64".
+        private static string GetWinArchSuffix()
+        {
+            switch (GetArchToken())
+            {
+                case "x64":
+                    return "64";
+                case "arm":
+                    return "ARM";
+                case "arm64":
+                    return "ARM64";
+                default:
+                    return String.Empty;
+            }
+        }
+
+        // The directory to resolve native modules from: the SetModulePath override if set (a
+        // directory, or the directory of a file path for backward compatibility), else the
+        // directory of this assembly.
+        private static string GetNativeDirectory()
+        {
+            if (!String.IsNullOrEmpty(modulePath))
+            {
+                if (Directory.Exists(modulePath))
+                    return modulePath;
+
+                var dir = Path.GetDirectoryName(modulePath);
+                if (!String.IsNullOrEmpty(dir))
+                    return dir;
+            }
+
+            var assembly = typeof(Scintilla).Assembly;
+            return (assembly != null) ? Path.GetDirectoryName(assembly.Location) : null;
+        }
+
+        private static string GetNativeFileName(string baseName)
+        {
+            var os = GetOsToken();
+            if (os == "win")
+                return baseName + ".dll";
+            if (os == "osx")
+                return "lib" + baseName.ToLowerInvariant() + ".dylib";
+            return "lib" + baseName.ToLowerInvariant() + ".so";
+        }
+
+#if NETCOREAPP || NETSTANDARD2_1
+        // Portable path (netstandard2.1 / netcoreapp3.0+): OS + architecture from the runtime,
+        // and the cross-platform NativeLibrary loader.
+        private static string GetOsToken()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return "win";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                return "osx";
+            return "linux";
+        }
+
+        private static string GetArchToken()
+        {
+            switch (RuntimeInformation.ProcessArchitecture)
+            {
+                case Architecture.X86:
+                    return "x86";
+                case Architecture.X64:
+                    return "x64";
+                case Architecture.Arm:
+                    return "arm";
+                case Architecture.Arm64:
+                    return "arm64";
+                default:
+                    return (IntPtr.Size == sizeof(int)) ? "x86" : "x64";
+            }
+        }
+
+        private static IntPtr LoadNativeModule(string path)
+        {
+            return NativeLibrary.Load(path);
+        }
+
+        private static IntPtr GetNativeExport(IntPtr module, string name)
+        {
+            IntPtr address;
+            NativeLibrary.TryGetExport(module, name, out address);
+            return address;
+        }
+#else
+        // .NET Framework targets (net35/40/48) are Windows-only; use the Win32 loader.
+        private static string GetOsToken()
+        {
+            return "win";
+        }
+
+        private static string GetArchToken()
+        {
+            var arch = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITECTURE");
+            if (String.Equals(arch, "ARM64", StringComparison.OrdinalIgnoreCase))
+                return "arm64";
+            if (String.Equals(arch, "ARM", StringComparison.OrdinalIgnoreCase))
+                return "arm";
+            return (IntPtr.Size == sizeof(int)) ? "x86" : "x64";
+        }
+
+        private static IntPtr LoadNativeModule(string path)
+        {
+            // LOAD_WITH_ALTERED_SEARCH_PATH resolves the module's own dependencies from its own
+            // directory rather than the default search order (which can include the current
+            // directory -- a classic DLL-planting vector).
+            return NativeMethods.LoadLibraryEx(path, IntPtr.Zero, NativeMethods.LOAD_WITH_ALTERED_SEARCH_PATH);
+        }
+
+        private static IntPtr GetNativeExport(IntPtr module, string name)
+        {
+            return NativeMethods.GetProcAddress(new HandleRef(null, module), name);
+        }
+#endif
 
         /// <summary>
         /// Gets the Primary style associated with the given Secondary style.
@@ -1112,7 +1240,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="position">The zero-based document position of the character to get the style for.</param>
         /// <returns>The zero-based <see cref="Style" /> index used at the specified <paramref name="position" />.</returns>
-        public int GetStyleAt(int position)
+        public int GetStyleAt(long position)
         {
             position = Helpers.Clamp(position, 0, TextLength);
             position = Lines.CharToBytePosition(position);
@@ -1177,7 +1305,7 @@ namespace ScintillaNET
         /// <param name="position">The zero-based starting character position of the range to get.</param>
         /// <param name="length">The number of characters to get.</param>
         /// <returns>A string representing the text range.</returns>
-        public unsafe string GetTextRange(int position, int length)
+        public unsafe string GetTextRange(long position, long length)
         {
             var textLength = TextLength;
             position = Helpers.Clamp(position, 0, textLength);
@@ -1191,7 +1319,7 @@ namespace ScintillaNET
             if (ptr == IntPtr.Zero)
                 return string.Empty;
 
-            return Helpers.GetString(ptr, (byteEndPos - byteStartPos), Encoding);
+            return Helpers.GetString(ptr, (int)(byteEndPos - byteStartPos), Encoding);
         }
 
         /// <summary>
@@ -1200,7 +1328,7 @@ namespace ScintillaNET
         /// <param name="position">The zero-based starting character position of the range to get.</param>
         /// <param name="length">The number of characters to get.</param>
         /// <returns>A string representing the text range formatted as HTML.</returns>
-        public string GetTextRangeAsHtml(int position, int length)
+        public string GetTextRangeAsHtml(long position, long length)
         {
             var textLength = TextLength;
             position = Helpers.Clamp(position, 0, textLength);
@@ -1229,10 +1357,10 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="position">The zero-based document character position to get the word from.</param>
         /// <returns>The word at the specified position.</returns>
-        public string GetWordFromPosition(int position)
+        public string GetWordFromPosition(long position)
         {
-            int startPosition = WordStartPosition(position, true);
-            int endPosition = WordEndPosition(position, true);
+            long startPosition = WordStartPosition(position, true);
+            long endPosition = WordEndPosition(position, true);
             return GetTextRange(startPosition, endPosition - startPosition);
         }
 
@@ -1241,7 +1369,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="position">The zero-based document character position to navigate to.</param>
         /// <remarks>Any selection is discarded.</remarks>
-        public void GotoPosition(int position)
+        public void GotoPosition(long position)
         {
             position = Helpers.Clamp(position, 0, TextLength);
             position = Lines.CharToBytePosition(position);
@@ -1255,7 +1383,7 @@ namespace ScintillaNET
         /// <param name="lineEnd">The zero-based index of the line range to end hiding.</param>
         /// <seealso cref="ShowLines" />
         /// <seealso cref="Line.Visible" />
-        public void HideLines(int lineStart, int lineEnd)
+        public void HideLines(long lineStart, long lineEnd)
         {
             lineStart = Helpers.Clamp(lineStart, 0, Lines.Count - 1);
             lineEnd = Helpers.Clamp(lineEnd, lineStart, Lines.Count - 1);
@@ -1268,7 +1396,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="position">The zero-based character position within the document to test.</param>
         /// <returns>A bitmap indicating which of the 32 indicators are in use at the specified <paramref name="position" />.</returns>
-        public uint IndicatorAllOnFor(int position)
+        public uint IndicatorAllOnFor(long position)
         {
             position = Helpers.Clamp(position, 0, TextLength);
             position = Lines.CharToBytePosition(position);
@@ -1282,7 +1410,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="position">The zero-based character position within the document to start clearing.</param>
         /// <param name="length">The number of characters to clear.</param>
-        public void IndicatorClearRange(int position, int length)
+        public void IndicatorClearRange(long position, long length)
         {
             var textLength = TextLength;
             position = Helpers.Clamp(position, 0, textLength);
@@ -1299,7 +1427,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="position">The zero-based character position within the document to start filling.</param>
         /// <param name="length">The number of characters to fill.</param>
-        public void IndicatorFillRange(int position, int length)
+        public void IndicatorFillRange(long position, long length)
         {
             var textLength = TextLength;
             position = Helpers.Clamp(position, 0, textLength);
@@ -1344,7 +1472,7 @@ namespace ScintillaNET
         /// <paramref name="position" /> is greater than the document length.
         /// </exception>
         /// <remarks>No scrolling is performed.</remarks>
-        public unsafe void InsertText(int position, string text)
+        public unsafe void InsertText(long position, string text)
         {
             if (position < -1)
                 throw new ArgumentOutOfRangeException("position", "Position must be greater or equal to zero, or -1.");
@@ -1376,7 +1504,7 @@ namespace ScintillaNET
         /// This method does not check whether there is whitespace in the search range,
         /// only that the <paramref name="start" /> and <paramref name="end" /> are at word boundaries.
         /// </remarks>
-        public bool IsRangeWord(int start, int end)
+        public bool IsRangeWord(long start, long end)
         {
             var textLength = TextLength;
             start = Helpers.Clamp(start, 0, textLength);
@@ -1393,7 +1521,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="position">The zero-based document character position.</param>
         /// <returns>The zero-based document line index containing the character <paramref name="position" />.</returns>
-        public int LineFromPosition(int position)
+        public long LineFromPosition(long position)
         {
             position = Helpers.Clamp(position, 0, TextLength);
             return Lines.LineFromCharPosition(position);
@@ -1408,7 +1536,7 @@ namespace ScintillaNET
         /// Negative values scroll in the opposite direction.
         /// A column is the width in pixels of a space character in the <see cref="Style.Default" /> style.
         /// </remarks>
-        public void LineScroll(int lines, int columns)
+        public void LineScroll(long lines, long columns)
         {
             DirectMessage(NativeMethods.SCI_LINESCROLL, new IntPtr(columns), new IntPtr(lines));
         }
@@ -1417,14 +1545,15 @@ namespace ScintillaNET
         /// Loads a <see cref="Scintilla" /> compatible lexer from an external DLL.
         /// </summary>
         /// <param name="path">The path to the external lexer DLL.</param>
-        public unsafe void LoadLexerLibrary(string path)
+        /// <remarks>
+        /// Not supported with Scintilla 5.x: SCI_LOADLEXERLIBRARY was removed. Lexers are provided
+        /// by the Lexilla module and selected by name via <see cref="LexerLanguage" />.
+        /// </remarks>
+        [Obsolete("SCI_LOADLEXERLIBRARY was removed in Scintilla 5. Lexers are provided by Lexilla; select by name via LexerLanguage.")]
+        public void LoadLexerLibrary(string path)
         {
-            if (String.IsNullOrEmpty(path))
-                return;
-
-            var bytes = Helpers.GetBytes(path, Encoding.Default, true);
-            fixed (byte* bp = bytes)
-                DirectMessage(NativeMethods.SCI_LOADLEXERLIBRARY, IntPtr.Zero, new IntPtr(bp));
+            throw new NotSupportedException(
+                "LoadLexerLibrary is not supported with Scintilla 5.x. Lexers are provided by the Lexilla module and selected by name via the LexerLanguage property.");
         }
 
         /// <summary>
@@ -1461,9 +1590,9 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="markerHandle">The <see cref="MarkerHandle" /> created by a previous call to <see cref="Line.MarkerAdd" /> of the marker to search for.</param>
         /// <returns>If found, the zero-based line index containing the marker; otherwise, -1.</returns>
-        public int MarkerLineFromHandle(MarkerHandle markerHandle)
+        public long MarkerLineFromHandle(MarkerHandle markerHandle)
         {
-            return DirectMessage(NativeMethods.SCI_MARKERLINEFROMHANDLE, markerHandle.Value).ToInt32();
+            return DirectMessage(NativeMethods.SCI_MARKERLINEFROMHANDLE, markerHandle.Value).ToInt64();
         }
 
         /// <summary>
@@ -1473,7 +1602,7 @@ namespace ScintillaNET
         /// <param name="edgeColor">The color of the vertical long line indicator.</param>
         /// <remarks>A column is defined as the width of a space character in the <see cref="Style.Default" /> style.</remarks>
         /// <seealso cref="MultiEdgeClearAll" />
-        public void MultiEdgeAddLine(int column, Color edgeColor)
+        public void MultiEdgeAddLine(long column, Color edgeColor)
         {
             column = Helpers.ClampMin(column, 0);
             var colour = ColorTranslator.ToWin32(edgeColor);
@@ -1941,7 +2070,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="pos">The zero-based document character position.</param>
         /// <returns>The x-coordinate of the specified <paramref name="pos" /> within the client rectangle of the control.</returns>
-        public int PointXFromPosition(int pos)
+        public int PointXFromPosition(long pos)
         {
             pos = Helpers.Clamp(pos, 0, TextLength);
             pos = Lines.CharToBytePosition(pos);
@@ -1953,7 +2082,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="pos">The zero-based document character position.</param>
         /// <returns>The y-coordinate of the specified <paramref name="pos" /> within the client rectangle of the control.</returns>
-        public int PointYFromPosition(int pos)
+        public int PointYFromPosition(long pos)
         {
             pos = Helpers.Clamp(pos, 0, TextLength);
             pos = Lines.CharToBytePosition(pos);
@@ -2063,7 +2192,7 @@ namespace ScintillaNET
         /// The <see cref="TargetStart" /> and <see cref="TargetEnd" /> properties will be updated to the start and end positions of the replaced text.
         /// The recommended way to delete text in the document is to set the target range to be removed and replace the target with an empty string.
         /// </remarks>
-        public unsafe int ReplaceTarget(string text)
+        public unsafe long ReplaceTarget(string text)
         {
             if (text == null)
                 text = string.Empty;
@@ -2086,7 +2215,7 @@ namespace ScintillaNET
         /// The <see cref="TargetStart" /> and <see cref="TargetEnd" /> properties will be updated to the start and end positions of the replaced text.
         /// </remarks>
         /// <seealso cref="GetTag" />
-        public unsafe int ReplaceTargetRe(string text)
+        public unsafe long ReplaceTargetRe(string text)
         {
             var bytes = Helpers.GetBytes(text ?? string.Empty, Encoding, false);
             fixed (byte* bp = bytes)
@@ -2111,14 +2240,14 @@ namespace ScintillaNET
         private void ScnDoubleClick(ref NativeMethods.SCNotification scn)
         {
             var keys = Keys.Modifiers & (Keys)(scn.modifiers << 16);
-            var eventArgs = new DoubleClickEventArgs(this, keys, scn.position.ToInt32(), scn.line.ToInt32());
+            var eventArgs = new DoubleClickEventArgs(this, keys, scn.position.ToInt64(), scn.line.ToInt64());
             OnDoubleClick(eventArgs);
         }
 
         private void ScnHotspotClick(ref NativeMethods.SCNotification scn)
         {
             var keys = Keys.Modifiers & (Keys)(scn.modifiers << 16);
-            var eventArgs = new HotspotClickEventArgs(this, keys, scn.position.ToInt32());
+            var eventArgs = new HotspotClickEventArgs(this, keys, scn.position.ToInt64());
             switch (scn.nmhdr.code)
             {
                 case NativeMethods.SCN_HOTSPOTCLICK:
@@ -2141,11 +2270,11 @@ namespace ScintillaNET
             {
                 case NativeMethods.SCN_INDICATORCLICK:
                     var keys = Keys.Modifiers & (Keys)(scn.modifiers << 16);
-                    OnIndicatorClick(new IndicatorClickEventArgs(this, keys, scn.position.ToInt32()));
+                    OnIndicatorClick(new IndicatorClickEventArgs(this, keys, scn.position.ToInt64()));
                     break;
 
                 case NativeMethods.SCN_INDICATORRELEASE:
-                    OnIndicatorRelease(new IndicatorReleaseEventArgs(this, scn.position.ToInt32()));
+                    OnIndicatorRelease(new IndicatorReleaseEventArgs(this, scn.position.ToInt64()));
                     break;
             }
         }
@@ -2153,7 +2282,7 @@ namespace ScintillaNET
         private void ScnMarginClick(ref NativeMethods.SCNotification scn)
         {
             var keys = Keys.Modifiers & (Keys)(scn.modifiers << 16);
-            var eventArgs = new MarginClickEventArgs(this, keys, scn.position.ToInt32(), scn.margin);
+            var eventArgs = new MarginClickEventArgs(this, keys, scn.position.ToInt64(), scn.margin);
 
             if (scn.nmhdr.code == NativeMethods.SCN_MARGINCLICK)
                 OnMarginClick(eventArgs);
@@ -2169,7 +2298,7 @@ namespace ScintillaNET
 
             if ((scn.modificationType & NativeMethods.SC_MOD_INSERTCHECK) > 0)
             {
-                var eventArgs = new InsertCheckEventArgs(this, scn.position.ToInt32(), scn.length.ToInt32(), scn.text);
+                var eventArgs = new InsertCheckEventArgs(this, scn.position.ToInt64(), scn.length.ToInt32(), scn.text);
                 OnInsertCheck(eventArgs);
 
                 cachedPosition = eventArgs.CachedPosition;
@@ -2181,7 +2310,7 @@ namespace ScintillaNET
             if ((scn.modificationType & (NativeMethods.SC_MOD_BEFOREDELETE | NativeMethods.SC_MOD_BEFOREINSERT)) > 0)
             {
                 var source = (ModificationSource)(scn.modificationType & sourceMask);
-                var eventArgs = new BeforeModificationEventArgs(this, source, scn.position.ToInt32(), scn.length.ToInt32(), scn.text);
+                var eventArgs = new BeforeModificationEventArgs(this, source, scn.position.ToInt64(), scn.length.ToInt32(), scn.text);
 
                 eventArgs.CachedPosition = cachedPosition;
                 eventArgs.CachedText = cachedText;
@@ -2202,7 +2331,7 @@ namespace ScintillaNET
             if ((scn.modificationType & (NativeMethods.SC_MOD_DELETETEXT | NativeMethods.SC_MOD_INSERTTEXT)) > 0)
             {
                 var source = (ModificationSource)(scn.modificationType & sourceMask);
-                var eventArgs = new ModificationEventArgs(this, source, scn.position.ToInt32(), scn.length.ToInt32(), scn.text, scn.linesAdded.ToInt32());
+                var eventArgs = new ModificationEventArgs(this, source, scn.position.ToInt64(), scn.length.ToInt32(), scn.text, scn.linesAdded.ToInt64());
 
                 eventArgs.CachedPosition = cachedPosition;
                 eventArgs.CachedText = cachedText;
@@ -2227,7 +2356,7 @@ namespace ScintillaNET
 
             if ((scn.modificationType & NativeMethods.SC_MOD_CHANGEANNOTATION) > 0)
             {
-                var eventArgs = new ChangeAnnotationEventArgs(scn.line.ToInt32());
+                var eventArgs = new ChangeAnnotationEventArgs(scn.line.ToInt64());
                 OnChangeAnnotation(eventArgs);
             }
         }
@@ -2249,7 +2378,7 @@ namespace ScintillaNET
         /// position to scroll out of view.
         /// </param>
         /// <remarks>This may be used to make a search match visible.</remarks>
-        public void ScrollRange(int start, int end)
+        public void ScrollRange(long start, long end)
         {
             var textLength = TextLength;
             start = Helpers.Clamp(start, 0, textLength);
@@ -2273,12 +2402,12 @@ namespace ScintillaNET
         /// If successful, the <see cref="TargetStart" /> and <see cref="TargetEnd" /> properties will be updated to the start and end positions of the matched text.
         /// Searching can be performed in reverse using a <see cref="TargetStart" /> greater than the <see cref="TargetEnd" />.
         /// </remarks>
-        public unsafe int SearchInTarget(string text)
+        public unsafe long SearchInTarget(string text)
         {
-            int bytePos = 0;
+            long bytePos = 0;
             var bytes = Helpers.GetBytes(text ?? string.Empty, Encoding, false);
             fixed (byte* bp = bytes)
-                bytePos = DirectMessage(NativeMethods.SCI_SEARCHINTARGET, new IntPtr(bytes.Length), new IntPtr(bp)).ToInt32();
+                bytePos = DirectMessage(NativeMethods.SCI_SEARCHINTARGET, new IntPtr(bytes.Length), new IntPtr(bp)).ToInt64();
 
             if (bytePos == -1)
                 return bytePos;
@@ -2322,7 +2451,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="pos">The zero-based document position to place the caret at.</param>
         /// <remarks>The caret is not scrolled into view.</remarks>
-        public void SetEmptySelection(int pos)
+        public void SetEmptySelection(long pos)
         {
             pos = Helpers.Clamp(pos, 0, TextLength);
             pos = Lines.CharToBytePosition(pos);
@@ -2421,9 +2550,9 @@ namespace ScintillaNET
         }
 
         /// <summary>
-        /// Sets the application-wide default module path of the native Scintilla library.
+        /// Sets the application-wide directory from which the native Scintilla and Lexilla modules are loaded.
         /// </summary>
-        /// <param name="modulePath">The native Scintilla module path.</param>
+        /// <param name="modulePath">The directory containing the native modules. A full file path is also accepted, in which case its containing directory is used.</param>
         /// <remarks>
         /// This method must be called prior to the first <see cref="Scintilla" /> control being created.
         /// The <paramref name="modulePath" /> must be an absolute (rooted) path.
@@ -2487,7 +2616,7 @@ namespace ScintillaNET
         /// to the same position as the <paramref name="currentPos" />).
         /// The current position is scrolled into view following this operation.
         /// </remarks>
-        public void SetSel(int anchorPos, int currentPos)
+        public void SetSel(long anchorPos, long currentPos)
         {
             if (anchorPos == currentPos)
             {
@@ -2518,7 +2647,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="caret">The zero-based document position to end the selection.</param>
         /// <param name="anchor">The zero-based document position to start the selection.</param>
-        public void SetSelection(int caret, int anchor)
+        public void SetSelection(long caret, long anchor)
         {
             var textLength = TextLength;
 
@@ -2574,7 +2703,7 @@ namespace ScintillaNET
         /// calls to <see cref="SetStyling" /> for a single call to <see cref="StartStyling" />.
         /// </remarks>
         /// <seealso cref="StartStyling" />
-        public void SetStyling(int length, int style)
+        public void SetStyling(long length, int style)
         {
             var textLength = TextLength;
 
@@ -2601,7 +2730,7 @@ namespace ScintillaNET
         /// <param name="end">The zero-based character position within the document to end a search or replace operation.</param>
         /// <seealso cref="TargetStart" />
         /// <seealso cref="TargetEnd" />
-        public void SetTargetRange(int start, int end)
+        public void SetTargetRange(long start, long end)
         {
             var textLength = TextLength;
             start = Helpers.Clamp(start, 0, textLength);
@@ -2657,7 +2786,7 @@ namespace ScintillaNET
         /// <param name="lineEnd">The zero-based index of the line range to end showing.</param>
         /// <seealso cref="HideLines" />
         /// <seealso cref="Line.Visible" />
-        public void ShowLines(int lineStart, int lineEnd)
+        public void ShowLines(long lineStart, long lineEnd)
         {
             lineStart = Helpers.Clamp(lineStart, 0, Lines.Count - 1);
             lineEnd = Helpers.Clamp(lineEnd, lineStart, Lines.Count - 1);
@@ -2674,7 +2803,7 @@ namespace ScintillaNET
         /// to style the document.
         /// </remarks>
         /// <seealso cref="SetStyling" />
-        public void StartStyling(int position)
+        public void StartStyling(long position)
         {
             position = Helpers.Clamp(position, 0, TextLength);
             var pos = Lines.CharToBytePosition(position);
@@ -2824,7 +2953,7 @@ namespace ScintillaNET
                         break;
 
                     case NativeMethods.SCN_STYLENEEDED:
-                        OnStyleNeeded(new StyleNeededEventArgs(this, scn.position.ToInt32()));
+                        OnStyleNeeded(new StyleNeededEventArgs(this, scn.position.ToInt64()));
                         break;
 
                     case NativeMethods.SCN_SAVEPOINTLEFT:
@@ -2849,11 +2978,11 @@ namespace ScintillaNET
                         break;
 
                     case NativeMethods.SCN_AUTOCSELECTION:
-                        OnAutoCSelection(new AutoCSelectionEventArgs(this, scn.position.ToInt32(), scn.text, scn.ch, (ListCompletionMethod)scn.listCompletionMethod));
+                        OnAutoCSelection(new AutoCSelectionEventArgs(this, scn.position.ToInt64(), scn.text, scn.ch, (ListCompletionMethod)scn.listCompletionMethod));
                         break;
 
                     case NativeMethods.SCN_AUTOCCOMPLETED:
-                        OnAutoCCompleted(new AutoCSelectionEventArgs(this, scn.position.ToInt32(), scn.text, scn.ch, (ListCompletionMethod)scn.listCompletionMethod));
+                        OnAutoCCompleted(new AutoCSelectionEventArgs(this, scn.position.ToInt64(), scn.text, scn.ch, (ListCompletionMethod)scn.listCompletionMethod));
                         break;
 
                     case NativeMethods.SCN_AUTOCCANCELLED:
@@ -2865,11 +2994,11 @@ namespace ScintillaNET
                         break;
 
                     case NativeMethods.SCN_DWELLSTART:
-                        OnDwellStart(new DwellEventArgs(this, scn.position.ToInt32(), scn.x, scn.y));
+                        OnDwellStart(new DwellEventArgs(this, scn.position.ToInt64(), scn.x, scn.y));
                         break;
 
                     case NativeMethods.SCN_DWELLEND:
-                        OnDwellEnd(new DwellEventArgs(this, scn.position.ToInt32(), scn.x, scn.y));
+                        OnDwellEnd(new DwellEventArgs(this, scn.position.ToInt64(), scn.x, scn.y));
                         break;
 
                     case NativeMethods.SCN_DOUBLECLICK:
@@ -2877,7 +3006,7 @@ namespace ScintillaNET
                         break;
 
                     case NativeMethods.SCN_NEEDSHOWN:
-                        OnNeedShown(new NeedShownEventArgs(this, scn.position.ToInt32(), scn.length.ToInt32()));
+                        OnNeedShown(new NeedShownEventArgs(this, scn.position.ToInt64(), scn.length.ToInt64()));
                         break;
 
                     case NativeMethods.SCN_HOTSPOTCLICK:
@@ -2953,12 +3082,12 @@ namespace ScintillaNET
         /// </param>
         /// <returns>The zero-based document postion of the word boundary.</returns>
         /// <seealso cref="WordStartPosition" />
-        public int WordEndPosition(int position, bool onlyWordCharacters)
+        public long WordEndPosition(long position, bool onlyWordCharacters)
         {
             var onlyWordChars = (onlyWordCharacters ? new IntPtr(1) : IntPtr.Zero);
             position = Helpers.Clamp(position, 0, TextLength);
             position = Lines.CharToBytePosition(position);
-            position = DirectMessage(NativeMethods.SCI_WORDENDPOSITION, new IntPtr(position), onlyWordChars).ToInt32();
+            position = DirectMessage(NativeMethods.SCI_WORDENDPOSITION, new IntPtr(position), onlyWordChars).ToInt64();
             return Lines.ByteToCharPosition(position);
         }
 
@@ -2972,12 +3101,12 @@ namespace ScintillaNET
         /// </param>
         /// <returns>The zero-based document postion of the word boundary.</returns>
         /// <seealso cref="WordEndPosition" />
-        public int WordStartPosition(int position, bool onlyWordCharacters)
+        public long WordStartPosition(long position, bool onlyWordCharacters)
         {
             var onlyWordChars = (onlyWordCharacters ? new IntPtr(1) : IntPtr.Zero);
             position = Helpers.Clamp(position, 0, TextLength);
             position = Lines.CharToBytePosition(position);
-            position = DirectMessage(NativeMethods.SCI_WORDSTARTPOSITION, new IntPtr(position), onlyWordChars).ToInt32();
+            position = DirectMessage(NativeMethods.SCI_WORDSTARTPOSITION, new IntPtr(position), onlyWordChars).ToInt64();
             return Lines.ByteToCharPosition(position);
         }
 
@@ -3117,11 +3246,11 @@ namespace ScintillaNET
         /// <seealso cref="ScrollCaret" />
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int AnchorPosition
+        public long AnchorPosition
         {
             get
             {
-                var bytePos = DirectMessage(NativeMethods.SCI_GETANCHOR).ToInt32();
+                var bytePos = DirectMessage(NativeMethods.SCI_GETANCHOR).ToInt64();
                 return Lines.ByteToCharPosition(bytePos);
             }
             set
@@ -3364,11 +3493,11 @@ namespace ScintillaNET
         /// <seealso cref="AutoCShow" />
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int AutoCPosStart
+        public long AutoCPosStart
         {
             get
             {
-                var pos = DirectMessage(NativeMethods.SCI_AUTOCPOSSTART).ToInt32();
+                var pos = DirectMessage(NativeMethods.SCI_AUTOCPOSSTART).ToInt64();
                 pos = Lines.ByteToCharPosition(pos);
 
                 return pos;
@@ -3825,29 +3954,40 @@ namespace ScintillaNET
                         throw new InvalidOperationException(
                             "Could not resolve the Scintilla module path. Deploy the native library beside the assembly, or set an absolute path via Scintilla.SetModulePath.");
 
-                    // Load the native Scintilla library by absolute path.
-                    // LOAD_WITH_ALTERED_SEARCH_PATH resolves the module's own
-                    // dependencies from its own directory rather than the default
-                    // search order (which can include the current directory).
-                    moduleHandle = NativeMethods.LoadLibraryEx(path, IntPtr.Zero, NativeMethods.LOAD_WITH_ALTERED_SEARCH_PATH);
+                    // Load the native Scintilla core through the platform loader seam
+                    // (NativeLibrary on modern targets, LoadLibraryEx on .NET Framework).
+                    moduleHandle = LoadNativeModule(path);
                     if (moduleHandle == IntPtr.Zero)
                     {
                         var message = string.Format(CultureInfo.InvariantCulture, "Could not load the Scintilla module at the path '{0}'.", path);
                         throw new Win32Exception(message, new Win32Exception()); // Calls GetLastError
                     }
 
-                    // Get the native Scintilla direct function -- the only function the library exports
-                    var directFunctionPointer = NativeMethods.GetProcAddress(new HandleRef(this, moduleHandle), "Scintilla_DirectFunction");
+                    // Bind the native Scintilla direct function -- the only function the core exports.
+                    var directFunctionPointer = GetNativeExport(moduleHandle, "Scintilla_DirectFunction");
                     if (directFunctionPointer == IntPtr.Zero)
                     {
                         var message = "The Scintilla module has no export for the 'Scintilla_DirectFunction' procedure.";
                         throw new Win32Exception(message, new Win32Exception()); // Calls GetLastError
                     }
 
-                    // Create a managed callback
                     directFunction = (NativeMethods.Scintilla_DirectFunction)Marshal.GetDelegateForFunctionPointer(
                         directFunctionPointer,
                         typeof(NativeMethods.Scintilla_DirectFunction));
+
+                    // Scintilla 5.x split the lexers into a separate Lexilla module. Load it and
+                    // bind CreateLexer; lexing is optional, so a missing Lexilla is not fatal here
+                    // (the Lexer / LexerLanguage setters surface a clear error if it is absent).
+                    var lexillaPath = GetNativePath("Lexilla");
+                    lexillaHandle = String.IsNullOrEmpty(lexillaPath) ? IntPtr.Zero : LoadNativeModule(lexillaPath);
+                    if (lexillaHandle != IntPtr.Zero)
+                    {
+                        var createLexerPointer = GetNativeExport(lexillaHandle, "CreateLexer");
+                        if (createLexerPointer != IntPtr.Zero)
+                            createLexer = (NativeMethods.Lexilla_CreateLexer)Marshal.GetDelegateForFunctionPointer(
+                                createLexerPointer,
+                                typeof(NativeMethods.Lexilla_CreateLexer));
+                    }
                 }
 
                 CreateParams cp = base.CreateParams;
@@ -3876,12 +4016,12 @@ namespace ScintillaNET
         /// <returns>The zero-based line index containing the <see cref="CurrentPosition" />.</returns>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int CurrentLine
+        public long CurrentLine
         {
             get
             {
-                var currentPos = DirectMessage(NativeMethods.SCI_GETCURRENTPOS).ToInt32();
-                var line = DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, new IntPtr(currentPos)).ToInt32();
+                var currentPos = DirectMessage(NativeMethods.SCI_GETCURRENTPOS).ToInt64();
+                var line = DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, new IntPtr(currentPos)).ToInt64();
                 return line;
             }
         }
@@ -3897,11 +4037,11 @@ namespace ScintillaNET
         /// <seealso cref="ScrollCaret" />
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int CurrentPosition
+        public long CurrentPosition
         {
             get
             {
-                var bytePos = DirectMessage(NativeMethods.SCI_GETCURRENTPOS).ToInt32();
+                var bytePos = DirectMessage(NativeMethods.SCI_GETCURRENTPOS).ToInt64();
                 return Lines.ByteToCharPosition(bytePos);
             }
             set
@@ -4042,11 +4182,11 @@ namespace ScintillaNET
         [DefaultValue(0)]
         [Category("Long Lines")]
         [Description("The number of columns at which to display long line indicators.")]
-        public int EdgeColumn
+        public long EdgeColumn
         {
             get
             {
-                return DirectMessage(NativeMethods.SCI_GETEDGECOLUMN).ToInt32();
+                return DirectMessage(NativeMethods.SCI_GETEDGECOLUMN).ToInt64();
             }
             set
             {
@@ -4174,11 +4314,11 @@ namespace ScintillaNET
         /// <remarks>The value is a visible line, not a document line.</remarks>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int FirstVisibleLine
+        public long FirstVisibleLine
         {
             get
             {
-                return DirectMessage(NativeMethods.SCI_GETFIRSTVISIBLELINE).ToInt32();
+                return DirectMessage(NativeMethods.SCI_GETFIRSTVISIBLELINE).ToInt64();
             }
             set
             {
@@ -4251,11 +4391,11 @@ namespace ScintillaNET
         /// <remarks>Guides are highlighted in the <see cref="Style.BraceLight" /> style. Column numbers can be determined by calling <see cref="GetColumn" />.</remarks>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int HighlightGuide
+        public long HighlightGuide
         {
             get
             {
-                return DirectMessage(NativeMethods.SCI_GETHIGHLIGHTGUIDE).ToInt32();
+                return DirectMessage(NativeMethods.SCI_GETHIGHLIGHTGUIDE).ToInt64();
             }
             set
             {
@@ -4424,12 +4564,13 @@ namespace ScintillaNET
         {
             get
             {
-                return (Lexer)DirectMessage(NativeMethods.SCI_GETLEXER);
+                // Scintilla 5.x has no numeric lexer id; map the current lexer's name to the enum.
+                return LexerNames.GetLexer(LexerLanguage);
             }
             set
             {
-                var lexer = (int)value;
-                DirectMessage(NativeMethods.SCI_SETLEXER, new IntPtr(lexer));
+                // GetName returns null for Container, so SetILexer installs no lexer (host-driven).
+                SetILexer(LexerNames.GetName(value));
             }
         }
 
@@ -4457,16 +4598,31 @@ namespace ScintillaNET
             }
             set
             {
-                if (string.IsNullOrEmpty(value))
-                {
-                    DirectMessage(NativeMethods.SCI_SETLEXERLANGUAGE, IntPtr.Zero, IntPtr.Zero);
-                }
-                else
-                {
-                    var bytes = Helpers.GetBytes(value, Encoding.ASCII, true);
-                    fixed (byte* bp = bytes)
-                        DirectMessage(NativeMethods.SCI_SETLEXERLANGUAGE, IntPtr.Zero, new IntPtr(bp));
-                }
+                SetILexer(value);
+            }
+        }
+
+        // Installs a lexer by name using Lexilla's CreateLexer + SCI_SETILEXER (the Scintilla 5.x
+        // model, replacing the removed SCI_SETLEXER / SCI_SETLEXERLANGUAGE). A null/empty name
+        // installs no lexer (Container / host-driven styling) and does not require Lexilla. Names
+        // are marshaled as NUL-terminated UTF-8 (portable; no ANSI code-page assumption).
+        private unsafe void SetILexer(string name)
+        {
+            if (String.IsNullOrEmpty(name))
+            {
+                DirectMessage(NativeMethods.SCI_SETILEXER, IntPtr.Zero, IntPtr.Zero);
+                return;
+            }
+
+            if (createLexer == null)
+                throw new InvalidOperationException(
+                    "The native Lexilla module (providing CreateLexer) is not available; a lexer cannot be set. Deploy Lexilla alongside the Scintilla native module.");
+
+            var bytes = Helpers.GetBytes(name, Encoding.UTF8, true);
+            fixed (byte* bp = bytes)
+            {
+                var iLexer = createLexer(new IntPtr(bp));
+                DirectMessage(NativeMethods.SCI_SETILEXER, IntPtr.Zero, iLexer);
             }
         }
 
@@ -4541,11 +4697,11 @@ namespace ScintillaNET
         /// </returns>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int LinesOnScreen
+        public long LinesOnScreen
         {
             get
             {
-                return DirectMessage(NativeMethods.SCI_LINESONSCREEN).ToInt32();
+                return DirectMessage(NativeMethods.SCI_LINESONSCREEN).ToInt64();
             }
         }
 
@@ -4892,11 +5048,11 @@ namespace ScintillaNET
         /// <returns>The zero-based document position of the rectangular selection anchor.</returns>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int RectangularSelectionAnchor
+        public long RectangularSelectionAnchor
         {
             get
             {
-                var pos = DirectMessage(NativeMethods.SCI_GETRECTANGULARSELECTIONANCHOR).ToInt32();
+                var pos = DirectMessage(NativeMethods.SCI_GETRECTANGULARSELECTIONANCHOR).ToInt64();
                 if (pos <= 0)
                     return pos;
 
@@ -4916,11 +5072,11 @@ namespace ScintillaNET
         /// <returns>The amount of virtual space past the end of the line offsetting the rectangular selection anchor.</returns>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int RectangularSelectionAnchorVirtualSpace
+        public long RectangularSelectionAnchorVirtualSpace
         {
             get
             {
-                return DirectMessage(NativeMethods.SCI_GETRECTANGULARSELECTIONANCHORVIRTUALSPACE).ToInt32();
+                return DirectMessage(NativeMethods.SCI_GETRECTANGULARSELECTIONANCHORVIRTUALSPACE).ToInt64();
             }
             set
             {
@@ -4935,11 +5091,11 @@ namespace ScintillaNET
         /// <returns>The zero-based document position of the rectangular selection caret.</returns>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int RectangularSelectionCaret
+        public long RectangularSelectionCaret
         {
             get
             {
-                var pos = DirectMessage(NativeMethods.SCI_GETRECTANGULARSELECTIONCARET).ToInt32();
+                var pos = DirectMessage(NativeMethods.SCI_GETRECTANGULARSELECTIONCARET).ToInt64();
                 if (pos <= 0)
                     return 0;
 
@@ -4959,11 +5115,11 @@ namespace ScintillaNET
         /// <returns>The amount of virtual space past the end of the line offsetting the rectangular selection caret.</returns>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int RectangularSelectionCaretVirtualSpace
+        public long RectangularSelectionCaretVirtualSpace
         {
             get
             {
-                return DirectMessage(NativeMethods.SCI_GETRECTANGULARSELECTIONCARETVIRTUALSPACE).ToInt32();
+                return DirectMessage(NativeMethods.SCI_GETRECTANGULARSELECTIONCARETVIRTUALSPACE).ToInt64();
             }
             set
             {
@@ -5093,11 +5249,11 @@ namespace ScintillaNET
         /// <seealso cref="SelectionStart" />
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int SelectionEnd
+        public long SelectionEnd
         {
             get
             {
-                var pos = DirectMessage(NativeMethods.SCI_GETSELECTIONEND).ToInt32();
+                var pos = DirectMessage(NativeMethods.SCI_GETSELECTIONEND).ToInt64();
                 return Lines.ByteToCharPosition(pos);
             }
             set
@@ -5148,11 +5304,11 @@ namespace ScintillaNET
         /// <seealso cref="SelectionEnd" />
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int SelectionStart
+        public long SelectionStart
         {
             get
             {
-                var pos = DirectMessage(NativeMethods.SCI_GETSELECTIONSTART).ToInt32();
+                var pos = DirectMessage(NativeMethods.SCI_GETSELECTIONSTART).ToInt64();
                 return Lines.ByteToCharPosition(pos);
             }
             set
@@ -5266,12 +5422,12 @@ namespace ScintillaNET
         /// <seealso cref="ReplaceTarget" />
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int TargetEnd
+        public long TargetEnd
         {
             get
             {
                 // The position can become stale and point to a place outside of the document so we must clamp it
-                var bytePos = Helpers.Clamp(DirectMessage(NativeMethods.SCI_GETTARGETEND).ToInt32(), 0, DirectMessage(NativeMethods.SCI_GETTEXTLENGTH).ToInt32());
+                var bytePos = Helpers.Clamp(DirectMessage(NativeMethods.SCI_GETTARGETEND).ToInt64(), 0, DirectMessage(NativeMethods.SCI_GETTEXTLENGTH).ToInt64());
                 return Lines.ByteToCharPosition(bytePos);
             }
             set
@@ -5291,12 +5447,12 @@ namespace ScintillaNET
         /// <seealso cref="ReplaceTarget" />
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int TargetStart
+        public long TargetStart
         {
             get
             {
                 // The position can become stale and point to a place outside of the document so we must clamp it
-                var bytePos = Helpers.Clamp(DirectMessage(NativeMethods.SCI_GETTARGETSTART).ToInt32(), 0, DirectMessage(NativeMethods.SCI_GETTEXTLENGTH).ToInt32());
+                var bytePos = Helpers.Clamp(DirectMessage(NativeMethods.SCI_GETTARGETSTART).ToInt64(), 0, DirectMessage(NativeMethods.SCI_GETTEXTLENGTH).ToInt64());
                 return Lines.ByteToCharPosition(bytePos);
             }
             set
@@ -5396,7 +5552,7 @@ namespace ScintillaNET
         /// <returns>The number of characters in the document.</returns>
         [Browsable(false)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public int TextLength
+        public long TextLength
         {
             get
             {

@@ -10,6 +10,15 @@ namespace ScintillaNET
     {
         #region Constants
 
+        // Portability note (Windows HOST layer). user32 (window class, WndProc, clipboard, the
+        // mouse-wheel IMessageFilter) and ole32 (RevokeDragDrop) back the WinForms Control host
+        // and are irreducibly Win32: a Linux/macOS port would need a ported WinForms plus the
+        // platform Scintilla (GTK/Cocoa) and would replace this whole layer. kernel32's
+        // LoadLibraryEx/GetProcAddress are used ONLY on the .NET Framework targets; modern
+        // targets load the native modules through the cross-platform NativeLibrary seam in
+        // Scintilla.cs (LoadNativeModule / GetNativeExport). The Scintilla and Lexilla calls
+        // themselves are portable -- Winapi calling convention, IntPtr / long widths, UTF-8
+        // strings -- so only this host layer is Windows-bound.
         private const string DLL_NAME_KERNEL32 = "kernel32.dll";
         private const string DLL_NAME_OLE32 = "ole32.dll";
         private const string DLL_NAME_USER32 = "user32.dll";
@@ -306,6 +315,7 @@ namespace ScintillaNET
         public const int SCI_SELECTALL = 2013;
         public const int SCI_SETSAVEPOINT = 2014;
         public const int SCI_GETSTYLEDTEXT = 2015;
+        public const int SCI_GETSTYLEDTEXTFULL = 2778;
         public const int SCI_CANREDO = 2016;
         public const int SCI_MARKERLINEFROMHANDLE = 2017;
         public const int SCI_MARKERDELETEHANDLE = 2018;
@@ -505,6 +515,7 @@ namespace ScintillaNET
         public const int SCI_SETSEL = 2160;
         public const int SCI_GETSELTEXT = 2161;
         public const int SCI_GETTEXTRANGE = 2162;
+        public const int SCI_GETTEXTRANGEFULL = 2039;
         public const int SCI_HIDESELECTION = 2163;
         public const int SCI_POINTXFROMPOSITION = 2164;
         public const int SCI_POINTYFROMPOSITION = 2165;
@@ -954,6 +965,7 @@ namespace ScintillaNET
         public const int SCI_STARTRECORD = 3001;
         public const int SCI_STOPRECORD = 3002;
         public const int SCI_SETLEXER = 4001;
+        public const int SCI_SETILEXER = 4033;
         public const int SCI_GETLEXER = 4002;
         public const int SCI_COLOURISE = 4003;
         public const int SCI_SETPROPERTY = 4004;
@@ -1772,7 +1784,14 @@ namespace ScintillaNET
 
         #region Callbacks
 
+        [UnmanagedFunctionPointer(CallingConvention.Winapi)]
         public delegate IntPtr Scintilla_DirectFunction(IntPtr ptr, int iMessage, IntPtr wParam, IntPtr lParam);
+
+        // Lexilla's CreateLexer(const char *name) -> ILexer5*. The name is passed as a pointer
+        // to a NUL-terminated UTF-8 buffer (portable; no ANSI code-page assumption). Winapi =
+        // __stdcall on Windows x86 (matching LEXILLA_CALL), cdecl on x64/ARM/ARM64 and non-Windows.
+        [UnmanagedFunctionPointer(CallingConvention.Winapi)]
+        public delegate IntPtr Lexilla_CreateLexer(IntPtr name);
 
         #endregion Callbacks
 
@@ -1814,9 +1833,6 @@ namespace ScintillaNET
 
         [DllImport(DLL_NAME_KERNEL32, EntryPoint = "RtlMoveMemory")]
         public static extern void MoveMemory(IntPtr destination, IntPtr source, UIntPtr length);
-
-        [DllImport(DLL_NAME_KERNEL32, EntryPoint = "RtlMoveMemory", SetLastError = true)]
-        public static extern void MoveMemory(IntPtr dest, IntPtr src, int length);
 
         [DllImport(DLL_NAME_USER32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -1865,7 +1881,7 @@ namespace ScintillaNET
             public delegate int ReleaseDelegate(IntPtr self);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate int AddDataDelegate(IntPtr self, byte* data, int length);
+            public delegate int AddDataDelegate(IntPtr self, byte* data, IntPtr length);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
             public delegate IntPtr ConvertToDocumentDelegate(IntPtr self);
@@ -1882,7 +1898,7 @@ namespace ScintillaNET
             public delegate int ReleaseDelegate(IntPtr self);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            public delegate int AddDataDelegate(IntPtr self, byte* data, int length);
+            public delegate int AddDataDelegate(IntPtr self, byte* data, IntPtr length);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
             public delegate IntPtr ConvertToDocumentDelegate(IntPtr self);
@@ -1907,6 +1923,24 @@ namespace ScintillaNET
         public struct Sci_TextRange
         {
             public Sci_CharacterRange chrg;
+            public IntPtr lpstrText;
+        }
+
+        // 64-bit range structs (Scintilla 5.x SCI_*FULL messages). cpMin/cpMax are Sci_Position
+        // (ptrdiff_t / pointer-sized), so IntPtr here -- correct on every architecture AND OS,
+        // unlike Sci_CharacterRange whose Sci_PositionCR (C long) is 32-bit on Windows but 64-bit
+        // on Linux/macOS. Prefer these over the legacy CHARRANGE-compatible structs.
+        [StructLayout(LayoutKind.Sequential)]
+        public struct Sci_CharacterRangeFull
+        {
+            public IntPtr cpMin;
+            public IntPtr cpMax;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct Sci_TextRangeFull
+        {
+            public Sci_CharacterRangeFull chrg;
             public IntPtr lpstrText;
         }
 

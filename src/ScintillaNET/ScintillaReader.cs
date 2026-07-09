@@ -18,18 +18,18 @@ namespace ScintillaNET {
         /// <summary>
         /// Returns the number of unbuffered characters left to be read.
         /// </summary>
-        private int UnbufferedRemaining { get { return _lastData - _nextData; } }
+        private long UnbufferedRemaining { get { return _lastData - _nextData; } }
         /// <summary>
         /// Returns the total number of characters left to be read.
         /// </summary>
-        private int TotalRemaining { get { return BufferRemaining + UnbufferedRemaining; } }
+        private long TotalRemaining { get { return BufferRemaining + UnbufferedRemaining; } }
 
         private Scintilla _scintilla;
         private int _bufferSize;
         private string _data;
         private int _dataIndex;
-        private int _nextData;
-        private int _lastData;
+        private long _nextData;
+        private long _lastData;
 
         /// <summary>
         /// Initializes a new instance of the ScintillaReader class that reads all text from the specified Scintilla control.
@@ -52,7 +52,7 @@ namespace ScintillaNET {
         /// <param name="scintilla">The Scintilla control from which to read.</param>
         /// <param name="start">The index of the first character to read.</param>
         /// <param name="end">The index just past the last character to read.</param>
-        public ScintillaReader(Scintilla scintilla, int start, int end)
+        public ScintillaReader(Scintilla scintilla, long start, long end)
             : this(scintilla, start, end, DefaultBufferSize) {
         }
         /// <summary>
@@ -62,7 +62,7 @@ namespace ScintillaNET {
         /// <param name="start">The index of the first character to read.</param>
         /// <param name="end">The index just past the last character to read.</param>
         /// <param name="bufferSize">The number of characters to buffer at a time.</param>
-        public ScintillaReader(Scintilla scintilla, int start, int end, int bufferSize) {
+        public ScintillaReader(Scintilla scintilla, long start, long end, int bufferSize) {
             _scintilla = scintilla;
             _bufferSize = bufferSize > 0 ? bufferSize : DefaultBufferSize;
             _nextData = start;
@@ -133,7 +133,7 @@ namespace ScintillaNET {
                     _data.CopyTo(_dataIndex, buffer, index, bufferRemaining);
                     if (count > bufferRemaining) {
                         // buffer is smaller; read rest
-                        var toRead = Math.Min(count - bufferRemaining, UnbufferedRemaining);
+                        var toRead = (int)Math.Min(count - bufferRemaining, UnbufferedRemaining);
                         var rest = _scintilla.GetTextRange(_nextData, toRead);
                         // GetTextRange rounds a boundary that bisects a surrogate pair
                         // up to the whole code point, so it can return one extra unit.
@@ -159,7 +159,7 @@ namespace ScintillaNET {
         /// </summary>
         private void BufferNextRegion() {
             if (_nextData < _lastData) {
-                var size = Math.Min(_lastData - _nextData, _bufferSize);
+                var size = (int)Math.Min(_lastData - _nextData, _bufferSize);
                 _data = _scintilla.GetTextRange(_nextData, size);
                 _nextData += _data.Length;
                 _dataIndex = 0;

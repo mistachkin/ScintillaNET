@@ -11,22 +11,22 @@ namespace ScintillaNET
     public class StyleNeededEventArgs : EventArgs
     {
         private readonly Scintilla scintilla;
-        private readonly int bytePosition;
-        private int? position;
+        private readonly long bytePosition;
+        private long? position;
 
         /// <summary>
         /// Gets the document position where styling should end. The <see cref="Scintilla.GetEndStyled" /> method
         /// indicates the last position styled correctly and the starting place for where styling should begin.
         /// </summary>
         /// <returns>The zero-based position within the document to perform styling up to.</returns>
-        public int Position
+        public long Position
         {
             get
             {
                 if (position == null)
                     position = scintilla.Lines.ByteToCharPosition(bytePosition);
 
-                return (int)position;
+                return (long)position;
             }
         }
 
@@ -35,7 +35,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="scintilla">The <see cref="Scintilla" /> control that generated this event.</param>
         /// <param name="bytePosition">The zero-based byte position within the document to stop styling.</param>
-        public StyleNeededEventArgs(Scintilla scintilla, int bytePosition)
+        public StyleNeededEventArgs(Scintilla scintilla, long bytePosition)
         {
             this.scintilla = scintilla;
             this.bytePosition = bytePosition;

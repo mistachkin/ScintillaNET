@@ -11,7 +11,7 @@ namespace ScintillaNET
     public class ModificationEventArgs : BeforeModificationEventArgs
     {
         private readonly Scintilla scintilla;
-        private readonly int bytePosition;
+        private readonly long bytePosition;
         private readonly int byteLength;
         private readonly IntPtr textPtr;
 
@@ -20,7 +20,7 @@ namespace ScintillaNET
         /// </summary>
         /// <returns>The number of lines added to the document when text is inserted, or the number of lines removed from the document when text is deleted.</returns>
         /// <remarks>When lines are deleted the return value will be negative.</remarks>
-        public int LinesAdded { get; private set; }
+        public long LinesAdded { get; private set; }
 
         /// <summary>
         /// Gets the text that was inserted or deleted.
@@ -46,7 +46,7 @@ namespace ScintillaNET
         /// <param name="byteLength">The length in bytes of the inserted or deleted text.</param>
         /// <param name="text">>A pointer to the text inserted or deleted.</param>
         /// <param name="linesAdded">The number of lines added or removed (delta).</param>
-        public ModificationEventArgs(Scintilla scintilla, ModificationSource source, int bytePosition, int byteLength, IntPtr text, int linesAdded) : base(scintilla, source, bytePosition, byteLength, text)
+        public ModificationEventArgs(Scintilla scintilla, ModificationSource source, long bytePosition, int byteLength, IntPtr text, long linesAdded) : base(scintilla, source, bytePosition, byteLength, text)
         {
             this.scintilla = scintilla;
             this.bytePosition = bytePosition;

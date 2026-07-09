@@ -21,7 +21,7 @@ namespace ScintillaNET
                 var bytes = Helpers.GetBytes(data, length, encoding, false);
                 fixed (byte* bp = bytes)
                 {
-                    var status = (IntPtr.Size == 4 ? loader32.AddData(self, bp, bytes.Length) : loader64.AddData(self, bp, bytes.Length));
+                    var status = (IntPtr.Size == 4 ? loader32.AddData(self, bp, new IntPtr(bytes.Length)) : loader64.AddData(self, bp, new IntPtr(bytes.Length)));
                     if (status != NativeMethods.SC_STATUS_OK)
                         return false;
                 }

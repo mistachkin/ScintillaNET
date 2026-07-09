@@ -11,25 +11,25 @@ namespace ScintillaNET
     public class BeforeModificationEventArgs : EventArgs
     {
         private readonly Scintilla scintilla;
-        private readonly int bytePosition;
+        private readonly long bytePosition;
         private readonly int byteLength;
         private readonly IntPtr textPtr;
 
-        internal int? CachedPosition { get; set; }
+        internal long? CachedPosition { get; set; }
         internal string CachedText { get; set; }
 
         /// <summary>
         /// Gets the zero-based document position where the modification will occur.
         /// </summary>
         /// <returns>The zero-based character position within the document where text will be inserted or deleted.</returns>
-        public int Position
+        public long Position
         {
             get
             {
                 if (CachedPosition == null)
                     CachedPosition = scintilla.Lines.ByteToCharPosition(bytePosition);
 
-                return (int)CachedPosition;
+                return (long)CachedPosition;
             }
         }
 
@@ -82,7 +82,7 @@ namespace ScintillaNET
         /// <param name="bytePosition">The zero-based byte position within the document where text is being modified.</param>
         /// <param name="byteLength">The length in bytes of the text being modified.</param>
         /// <param name="text">A pointer to the text being inserted.</param>
-        public BeforeModificationEventArgs(Scintilla scintilla, ModificationSource source, int bytePosition, int byteLength, IntPtr text)
+        public BeforeModificationEventArgs(Scintilla scintilla, ModificationSource source, long bytePosition, int byteLength, IntPtr text)
         {
             this.scintilla = scintilla;
             this.bytePosition = bytePosition;

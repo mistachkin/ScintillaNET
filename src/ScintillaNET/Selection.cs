@@ -16,11 +16,11 @@ namespace ScintillaNET
         /// Gets or sets the anchor position of the selection.
         /// </summary>
         /// <returns>The zero-based document position of the selection anchor.</returns>
-        public int Anchor
+        public long Anchor
         {
             get
             {
-                var pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNANCHOR, new IntPtr(Index)).ToInt32();
+                var pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNANCHOR, new IntPtr(Index)).ToInt64();
                 if (pos <= 0)
                     return pos;
 
@@ -38,11 +38,11 @@ namespace ScintillaNET
         /// Gets or sets the amount of anchor virtual space.
         /// </summary>
         /// <returns>The amount of virtual space past the end of the line offsetting the selection anchor.</returns>
-        public int AnchorVirtualSpace
+        public long AnchorVirtualSpace
         {
             get
             {
-                return scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNANCHORVIRTUALSPACE, new IntPtr(Index)).ToInt32();
+                return scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNANCHORVIRTUALSPACE, new IntPtr(Index)).ToInt64();
             }
             set
             {
@@ -55,11 +55,11 @@ namespace ScintillaNET
         /// Gets or sets the caret position of the selection.
         /// </summary>
         /// <returns>The zero-based document position of the selection caret.</returns>
-        public int Caret
+        public long Caret
         {
             get
             {
-                var pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNCARET, new IntPtr(Index)).ToInt32();
+                var pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNCARET, new IntPtr(Index)).ToInt64();
                 if (pos <= 0)
                     return pos;
 
@@ -77,11 +77,11 @@ namespace ScintillaNET
         /// Gets or sets the amount of caret virtual space.
         /// </summary>
         /// <returns>The amount of virtual space past the end of the line offsetting the selection caret.</returns>
-        public int CaretVirtualSpace
+        public long CaretVirtualSpace
         {
             get
             {
-                return scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNCARETVIRTUALSPACE, new IntPtr(Index)).ToInt32();
+                return scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNCARETVIRTUALSPACE, new IntPtr(Index)).ToInt64();
             }
             set
             {
@@ -94,11 +94,11 @@ namespace ScintillaNET
         /// Gets or sets the end position of the selection.
         /// </summary>
         /// <returns>The zero-based document position where the selection ends.</returns>
-        public int End
+        public long End
         {
             get
             {
-                var pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNEND, new IntPtr(Index)).ToInt32();
+                var pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNEND, new IntPtr(Index)).ToInt64();
                 if (pos <= 0)
                     return pos;
 
@@ -122,11 +122,11 @@ namespace ScintillaNET
         /// Gets or sets the start position of the selection.
         /// </summary>
         /// <returns>The zero-based document position where the selection starts.</returns>
-        public int Start
+        public long Start
         {
             get
             {
-                var pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNSTART, new IntPtr(Index)).ToInt32();
+                var pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNSTART, new IntPtr(Index)).ToInt64();
                 if (pos <= 0)
                     return pos;
 

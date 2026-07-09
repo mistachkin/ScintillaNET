@@ -58,9 +58,9 @@ namespace ScintillaNET
         /// to <paramref name="level" />. If the current line is a fold point and <paramref name="level"/> is -1 the
         /// index returned is the last line that would be made visible or hidden by toggling the fold state.
         /// </returns>
-        public int GetLastChild(int level)
+        public long GetLastChild(int level)
         {
-            return scintilla.DirectMessage(NativeMethods.SCI_GETLASTCHILD, new IntPtr(Index), new IntPtr(level)).ToInt32();
+            return scintilla.DirectMessage(NativeMethods.SCI_GETLASTCHILD, new IntPtr(Index), new IntPtr(level)).ToInt64();
         }
 
         /// <summary>
@@ -122,10 +122,10 @@ namespace ScintillaNET
         /// <param name="markerMask">An unsigned 32-bit value with each bit cooresponding to one of the 32 zero-based <see cref="Margin" /> indexes.</param>
         /// <returns>If found, the zero-based line index containing one of the markers in <paramref name="markerMask" />; otherwise, -1.</returns>
         /// <remarks>For example, the mask for marker index 10 is 1 shifted left 10 times (1 &lt;&lt; 10).</remarks>
-        public int MarkerNext(uint markerMask)
+        public long MarkerNext(uint markerMask)
         {
             var mask = unchecked((int)markerMask);
-            return scintilla.DirectMessage(NativeMethods.SCI_MARKERNEXT, new IntPtr(Index), new IntPtr(mask)).ToInt32();
+            return scintilla.DirectMessage(NativeMethods.SCI_MARKERNEXT, new IntPtr(Index), new IntPtr(mask)).ToInt64();
         }
 
         /// <summary>
@@ -134,10 +134,10 @@ namespace ScintillaNET
         /// <param name="markerMask">An unsigned 32-bit value with each bit cooresponding to one of the 32 zero-based <see cref="Margin" /> indexes.</param>
         /// <returns>If found, the zero-based line index containing one of the markers in <paramref name="markerMask" />; otherwise, -1.</returns>
         /// <remarks>For example, the mask for marker index 10 is 1 shifted left 10 times (1 &lt;&lt; 10).</remarks>
-        public int MarkerPrevious(uint markerMask)
+        public long MarkerPrevious(uint markerMask)
         {
             var mask = unchecked((int)markerMask);
-            return scintilla.DirectMessage(NativeMethods.SCI_MARKERPREVIOUS, new IntPtr(Index), new IntPtr(mask)).ToInt32();
+            return scintilla.DirectMessage(NativeMethods.SCI_MARKERPREVIOUS, new IntPtr(Index), new IntPtr(mask)).ToInt64();
         }
 
         /// <summary>
@@ -298,11 +298,11 @@ namespace ScintillaNET
         /// </summary>
         /// <returns>The zero-based line index of the next contracted folder header.</returns>
         /// <remarks>If the current line is contracted the current line index is returned.</remarks>
-        public int ContractedFoldNext
+        public long ContractedFoldNext
         {
             get
             {
-                return scintilla.DirectMessage(NativeMethods.SCI_CONTRACTEDFOLDNEXT, new IntPtr(Index)).ToInt32();
+                return scintilla.DirectMessage(NativeMethods.SCI_CONTRACTEDFOLDNEXT, new IntPtr(Index)).ToInt64();
             }
         }
 
@@ -312,11 +312,11 @@ namespace ScintillaNET
         /// </summary>
         /// <returns>The zero-based display line index.</returns>
         /// <seealso cref="Scintilla.DocLineFromVisible" />
-        public int DisplayIndex
+        public long DisplayIndex
         {
             get
             {
-                return scintilla.DirectMessage(NativeMethods.SCI_VISIBLEFROMDOCLINE, new IntPtr(Index)).ToInt32();
+                return scintilla.DirectMessage(NativeMethods.SCI_VISIBLEFROMDOCLINE, new IntPtr(Index)).ToInt64();
             }
         }
 
@@ -324,7 +324,7 @@ namespace ScintillaNET
         /// Gets the zero-based character position in the document where the line ends (exclusive).
         /// </summary>
         /// <returns>The equivalent of <see cref="Position" /> + <see cref="Length" />.</returns>
-        public int EndPosition
+        public long EndPosition
         {
             get
             {
@@ -398,11 +398,11 @@ namespace ScintillaNET
         /// <see cref="ScintillaNET.FoldLevelFlags.Header" /> and has a <see cref="FoldLevel" /> less than the current line.
         /// </summary>
         /// <returns>The zero-based line index of the fold parent if present; otherwise, -1.</returns>
-        public int FoldParent
+        public long FoldParent
         {
             get
             {
-                return scintilla.DirectMessage(NativeMethods.SCI_GETFOLDPARENT, new IntPtr(Index)).ToInt32();
+                return scintilla.DirectMessage(NativeMethods.SCI_GETFOLDPARENT, new IntPtr(Index)).ToInt64();
             }
         }
 
@@ -423,13 +423,13 @@ namespace ScintillaNET
         /// Gets the line index.
         /// </summary>
         /// <returns>The zero-based line index within the <see cref="LineCollection" /> that created it.</returns>
-        public int Index { get; private set; }
+        public long Index { get; private set; }
 
         /// <summary>
         /// Gets the length of the line.
         /// </summary>
         /// <returns>The number of characters in the line including any end of line characters.</returns>
-        public int Length
+        public long Length
         {
             get
             {
@@ -549,7 +549,7 @@ namespace ScintillaNET
         /// Gets the zero-based character position in the document where the line begins.
         /// </summary>
         /// <returns>The document position of the first character in the line.</returns>
-        public int Position
+        public long Position
         {
             get
             {
@@ -611,11 +611,11 @@ namespace ScintillaNET
         /// Gets the number of display lines this line would occupy when wrapping is enabled.
         /// </summary>
         /// <returns>The number of display lines needed to wrap the current document line.</returns>
-        public int WrapCount
+        public long WrapCount
         {
             get
             {
-                return scintilla.DirectMessage(NativeMethods.SCI_WRAPCOUNT, new IntPtr(Index)).ToInt32();
+                return scintilla.DirectMessage(NativeMethods.SCI_WRAPCOUNT, new IntPtr(Index)).ToInt64();
             }
         }
 
@@ -628,7 +628,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="scintilla">The <see cref="Scintilla" /> control that created this line.</param>
         /// <param name="index">The index of this line within the <see cref="LineCollection" /> that created it.</param>
-        public Line(Scintilla scintilla, int index)
+        public Line(Scintilla scintilla, long index)
         {
             this.scintilla = scintilla;
             Index = index;

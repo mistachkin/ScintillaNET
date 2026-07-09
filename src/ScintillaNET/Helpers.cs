@@ -187,6 +187,17 @@ namespace ScintillaNET
             return value;
         }
 
+        public static long Clamp(long value, long min, long max)
+        {
+            if (value < min)
+                return min;
+
+            if (value > max)
+                return max;
+
+            return value;
+        }
+
         public static int ClampMin(int value, int min)
         {
             if (value < min)
@@ -195,7 +206,15 @@ namespace ScintillaNET
             return value;
         }
 
-        public static void Copy(Scintilla scintilla, CopyFormat format, bool useSelection, bool allowLine, int startBytePos, int endBytePos)
+        public static long ClampMin(long value, long min)
+        {
+            if (value < min)
+                return min;
+
+            return value;
+        }
+
+        public static void Copy(Scintilla scintilla, CopyFormat format, bool useSelection, bool allowLine, long startBytePos, long endBytePos)
         {
             // Plain text
             if ((format & CopyFormat.Text) > 0)
@@ -857,7 +876,7 @@ namespace ScintillaNET
             }
         }
 
-        public static string GetHtml(Scintilla scintilla, int startBytePos, int endBytePos)
+        public static string GetHtml(Scintilla scintilla, long startBytePos, long endBytePos)
         {
             // If we ever allow more than UTF-8, this will have to be revisited
             Debug.Assert(scintilla.DirectMessage(NativeMethods.SCI_GETCODEPAGE).ToInt32() == NativeMethods.SC_CP_UTF8);
@@ -1032,19 +1051,19 @@ namespace ScintillaNET
             return str;
         }
 
-        private static unsafe List<ArraySegment<byte>> GetStyledSegments(Scintilla scintilla, bool currentSelection, bool currentLine, int startBytePos, int endBytePos, out StyleData[] styles)
+        private static unsafe List<ArraySegment<byte>> GetStyledSegments(Scintilla scintilla, bool currentSelection, bool currentLine, long startBytePos, long endBytePos, out StyleData[] styles)
         {
             var segments = new List<ArraySegment<byte>>();
             if (currentSelection)
             {
                 // Get each selection as a segment.
                 // Rectangular selections are ordered top to bottom and have line breaks appended.
-                var ranges = new List<Tuple<int, int>>();
+                var ranges = new List<Tuple<long, long>>();
                 var selCount = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONS).ToInt32();
                 for (int i = 0; i < selCount; i++)
                 {
-                    var selStartBytePos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNSTART, new IntPtr(i)).ToInt32();
-                    var selEndBytePos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNEND, new IntPtr(i)).ToInt32();
+                    var selStartBytePos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNSTART, new IntPtr(i)).ToInt64();
+                    var selEndBytePos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNEND, new IntPtr(i)).ToInt64();
 
                     ranges.Add(Tuple.Create(selStartBytePos, selEndBytePos));
                 }
@@ -1063,10 +1082,10 @@ namespace ScintillaNET
             {
                 // Get the current line
                 var mainSelection = scintilla.DirectMessage(NativeMethods.SCI_GETMAINSELECTION).ToInt32();
-                var mainCaretPos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNCARET, new IntPtr(mainSelection)).ToInt32();
-                var lineIndex = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, new IntPtr(mainCaretPos)).ToInt32();
-                var lineStartBytePos = scintilla.DirectMessage(NativeMethods.SCI_POSITIONFROMLINE, new IntPtr(lineIndex)).ToInt32();
-                var lineLength = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(lineIndex)).ToInt32();
+                var mainCaretPos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNCARET, new IntPtr(mainSelection)).ToInt64();
+                var lineIndex = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, new IntPtr(mainCaretPos)).ToInt64();
+                var lineStartBytePos = scintilla.DirectMessage(NativeMethods.SCI_POSITIONFROMLINE, new IntPtr(lineIndex)).ToInt64();
+                var lineLength = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(lineIndex)).ToInt64();
 
                 var styledText = GetStyledText(scintilla, lineStartBytePos, (lineStartBytePos + lineLength), false);
                 segments.Add(styledText);
@@ -1116,29 +1135,30 @@ namespace ScintillaNET
             return segments;
         }
 
-        private static unsafe ArraySegment<byte> GetStyledText(Scintilla scintilla, int startBytePos, int endBytePos, bool addLineBreak)
+        private static unsafe ArraySegment<byte> GetStyledText(Scintilla scintilla, long startBytePos, long endBytePos, bool addLineBreak)
         {
             Debug.Assert(endBytePos > startBytePos);
 
             // Make sure the range is styled
             scintilla.DirectMessage(NativeMethods.SCI_COLOURISE, new IntPtr(startBytePos), new IntPtr(endBytePos));
 
-            var byteLength = (endBytePos - startBytePos);
+            var rangeLength = (endBytePos - startBytePos);
             // 2 bytes per source byte (interleaved char + style) plus the optional line
             // break (4) and NUL terminator (2). Compute in 64-bit and reject a range too
             // large for an int-sized buffer rather than overflowing to a negative length.
-            var bufferLength = ((long)byteLength * 2) + (addLineBreak ? 4 : 0) + 2;
+            var bufferLength = (rangeLength * 2) + (addLineBreak ? 4 : 0) + 2;
             if (bufferLength > int.MaxValue)
                 throw new ArgumentException("The styled range is too large to serialize.");
+            var byteLength = (int)rangeLength;
             var buffer = new byte[(int)bufferLength];
             fixed (byte* bp = buffer)
             {
-                NativeMethods.Sci_TextRange* tr = stackalloc NativeMethods.Sci_TextRange[1];
-                tr->chrg.cpMin = startBytePos;
-                tr->chrg.cpMax = endBytePos;
+                NativeMethods.Sci_TextRangeFull* tr = stackalloc NativeMethods.Sci_TextRangeFull[1];
+                tr->chrg.cpMin = new IntPtr(startBytePos);
+                tr->chrg.cpMax = new IntPtr(endBytePos);
                 tr->lpstrText = new IntPtr(bp);
 
-                scintilla.DirectMessage(NativeMethods.SCI_GETSTYLEDTEXT, IntPtr.Zero, new IntPtr(tr));
+                scintilla.DirectMessage(NativeMethods.SCI_GETSTYLEDTEXTFULL, IntPtr.Zero, new IntPtr(tr));
                 byteLength *= 2;
             }
 

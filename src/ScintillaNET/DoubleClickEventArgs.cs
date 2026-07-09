@@ -12,14 +12,14 @@ namespace ScintillaNET
     public class DoubleClickEventArgs : EventArgs
     {
         private readonly Scintilla scintilla;
-        private readonly int bytePosition;
-        private int? position;
+        private readonly long bytePosition;
+        private long? position;
 
         /// <summary>
         /// Gets the line double clicked.
         /// </summary>
         /// <returns>The zero-based index of the double clicked line.</returns>
-        public int Line { get; private set; }
+        public long Line { get; private set; }
 
         /// <summary>
         /// Gets the modifier keys (SHIFT, CTRL, ALT) held down when double clicked.
@@ -34,14 +34,14 @@ namespace ScintillaNET
         /// The zero-based character position within the document of the double clicked text;
         /// otherwise, -1 if not a document position.
         /// </returns>
-        public int Position
+        public long Position
         {
             get
             {
                 if (position == null)
                     position = scintilla.Lines.ByteToCharPosition(bytePosition);
 
-                return (int)position;
+                return (long)position;
             }
         }
 
@@ -52,7 +52,7 @@ namespace ScintillaNET
         /// <param name="modifiers">The modifier keys that where held down at the time of the double click.</param>
         /// <param name="bytePosition">The zero-based byte position of the double clicked text.</param>
         /// <param name="line">The zero-based line index of the double clicked text.</param>
-        public DoubleClickEventArgs(Scintilla scintilla, Keys modifiers, int bytePosition, int line)
+        public DoubleClickEventArgs(Scintilla scintilla, Keys modifiers, long bytePosition, long line)
         {
             this.scintilla = scintilla;
             this.bytePosition = bytePosition;

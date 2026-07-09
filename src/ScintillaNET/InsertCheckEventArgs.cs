@@ -11,25 +11,25 @@ namespace ScintillaNET
     public class InsertCheckEventArgs : EventArgs
     {
         private readonly Scintilla scintilla;
-        private readonly int bytePosition;
+        private readonly long bytePosition;
         private readonly int byteLength;
         private readonly IntPtr textPtr;
 
-        internal int? CachedPosition { get; set; }
+        internal long? CachedPosition { get; set; }
         internal string CachedText { get; set; }
 
         /// <summary>
         /// Gets the zero-based document position where text will be inserted.
         /// </summary>
         /// <returns>The zero-based character position within the document where text will be inserted.</returns>
-        public int Position
+        public long Position
         {
             get
             {
                 if (CachedPosition == null)
                     CachedPosition = scintilla.Lines.ByteToCharPosition(bytePosition);
 
-                return (int)CachedPosition;
+                return (long)CachedPosition;
             }
         }
 
@@ -63,7 +63,7 @@ namespace ScintillaNET
         /// <param name="bytePosition">The zero-based byte position within the document where text is being inserted.</param>
         /// <param name="byteLength">The length in bytes of the inserted text.</param>
         /// <param name="text">A pointer to the text being inserted.</param>
-        public InsertCheckEventArgs(Scintilla scintilla, int bytePosition, int byteLength, IntPtr text)
+        public InsertCheckEventArgs(Scintilla scintilla, long bytePosition, int byteLength, IntPtr text)
         {
             this.scintilla = scintilla;
             this.bytePosition = bytePosition;

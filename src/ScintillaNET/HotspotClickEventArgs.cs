@@ -13,8 +13,8 @@ namespace ScintillaNET
     public class HotspotClickEventArgs : EventArgs
     {
         private readonly Scintilla scintilla;
-        private readonly int bytePosition;
-        private int? position;
+        private readonly long bytePosition;
+        private long? position;
 
         /// <summary>
         /// Gets the modifier keys (SHIFT, CTRL, ALT) held down when clicked.
@@ -27,14 +27,14 @@ namespace ScintillaNET
         /// Gets the zero-based document position of the text clicked.
         /// </summary>
         /// <returns>The zero-based character position within the document of the clicked text.</returns>
-        public int Position
+        public long Position
         {
             get
             {
                 if (position == null)
                     position = scintilla.Lines.ByteToCharPosition(bytePosition);
 
-                return (int)position;
+                return (long)position;
             }
         }
 
@@ -44,7 +44,7 @@ namespace ScintillaNET
         /// <param name="scintilla">The <see cref="Scintilla" /> control that generated this event.</param>
         /// <param name="modifiers">The modifier keys that where held down at the time of the click.</param>
         /// <param name="bytePosition">The zero-based byte position of the clicked text.</param>
-        public HotspotClickEventArgs(Scintilla scintilla, Keys modifiers, int bytePosition)
+        public HotspotClickEventArgs(Scintilla scintilla, Keys modifiers, long bytePosition)
         {
             this.scintilla = scintilla;
             this.bytePosition = bytePosition;

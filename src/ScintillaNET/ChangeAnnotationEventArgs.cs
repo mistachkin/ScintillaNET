@@ -14,13 +14,13 @@ namespace ScintillaNET
         /// Gets the line index where the annotation changed.
         /// </summary>
         /// <returns>The zero-based line index where the annotation change occurred.</returns>
-        public int Line { get; private set; }
+        public long Line { get; private set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ChangeAnnotationEventArgs" /> class.
         /// </summary>
         /// <param name="line">The zero-based line index of the annotation that changed.</param>
-        public ChangeAnnotationEventArgs(int line)
+        public ChangeAnnotationEventArgs(long line)
         {
             Line = line;
         }

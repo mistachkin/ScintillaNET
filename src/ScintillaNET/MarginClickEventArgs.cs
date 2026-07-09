@@ -12,8 +12,8 @@ namespace ScintillaNET
     public class MarginClickEventArgs : EventArgs
     {
         private readonly Scintilla scintilla;
-        private readonly int bytePosition;
-        private int? position;
+        private readonly long bytePosition;
+        private long? position;
 
         /// <summary>
         /// Gets the margin clicked.
@@ -31,14 +31,14 @@ namespace ScintillaNET
         /// Gets the zero-based document position where the line ajacent to the clicked margin starts.
         /// </summary>
         /// <returns>The zero-based character position within the document of the start of the line adjacent to the margin clicked.</returns>
-        public int Position
+        public long Position
         {
             get
             {
                 if (position == null)
                     position = scintilla.Lines.ByteToCharPosition(bytePosition);
 
-                return (int)position;
+                return (long)position;
             }
         }
 
@@ -49,7 +49,7 @@ namespace ScintillaNET
         /// <param name="modifiers">The modifier keys that where held down at the time of the margin click.</param>
         /// <param name="bytePosition">The zero-based byte position within the document where the line adjacent to the clicked margin starts.</param>
         /// <param name="margin">The zero-based index of the clicked margin.</param>
-        public MarginClickEventArgs(Scintilla scintilla, Keys modifiers, int bytePosition, int margin)
+        public MarginClickEventArgs(Scintilla scintilla, Keys modifiers, long bytePosition, int margin)
         {
             this.scintilla = scintilla;
             this.bytePosition = bytePosition;

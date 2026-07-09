@@ -12,8 +12,8 @@ namespace ScintillaNET
     {
         private readonly Scintilla scintilla;
         private readonly IntPtr textPtr;
-        private readonly int bytePosition;
-        private int? position;
+        private readonly long bytePosition;
+        private long? position;
         private string text;
 
         /// <summary>
@@ -34,14 +34,14 @@ namespace ScintillaNET
         /// Gets the start position of the word being completed.
         /// </summary>
         /// <returns>The zero-based document position of the word being completed.</returns>
-        public int Position
+        public long Position
         {
             get
             {
                 if (position == null)
                     position = scintilla.Lines.ByteToCharPosition(bytePosition);
 
-                return (int)position;
+                return (long)position;
             }
         }
 
@@ -74,7 +74,7 @@ namespace ScintillaNET
         /// <param name="text">A pointer to the selected autocompletion text.</param>
         /// <param name="ch">The character that caused the completion.</param>
         /// <param name="listCompletionMethod">A value indicating the way in which the completion occurred.</param>
-        public AutoCSelectionEventArgs(Scintilla scintilla, int bytePosition, IntPtr text, int ch, ListCompletionMethod listCompletionMethod)
+        public AutoCSelectionEventArgs(Scintilla scintilla, long bytePosition, IntPtr text, int ch, ListCompletionMethod listCompletionMethod)
         {
             this.scintilla = scintilla;
             this.bytePosition = bytePosition;

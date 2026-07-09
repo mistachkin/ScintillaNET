@@ -11,21 +11,21 @@ namespace ScintillaNET
     public class DwellEventArgs : EventArgs
     {
         private readonly Scintilla scintilla;
-        private readonly int bytePosition;
-        private int? position;
+        private readonly long bytePosition;
+        private long? position;
 
         /// <summary>
         /// Gets the zero-based document position where the mouse pointer was lingering.
         /// </summary>
         /// <returns>The nearest zero-based document position to where the mouse pointer was lingering.</returns>
-        public int Position
+        public long Position
         {
             get
             {
                 if (position == null)
                     position = scintilla.Lines.ByteToCharPosition(bytePosition);
 
-                return (int)position;
+                return (long)position;
             }
         }
 
@@ -48,7 +48,7 @@ namespace ScintillaNET
         /// <param name="bytePosition">The zero-based byte position within the document where the mouse pointer was lingering.</param>
         /// <param name="x">The x-coordinate of the mouse pointer relative to the <see cref="Scintilla" /> control.</param>
         /// <param name="y">The y-coordinate of the mouse pointer relative to the <see cref="Scintilla" /> control.</param>
-        public DwellEventArgs(Scintilla scintilla, int bytePosition, int x, int y)
+        public DwellEventArgs(Scintilla scintilla, long bytePosition, int x, int y)
         {
             this.scintilla = scintilla;
             this.bytePosition = bytePosition;

@@ -23,7 +23,7 @@ namespace ScintillaNET
         /// <param name="scintilla">The <see cref="Scintilla" /> control that generated this event.</param>
         /// <param name="modifiers">The modifier keys that where held down at the time of the click.</param>
         /// <param name="bytePosition">The zero-based byte position of the clicked text.</param>
-        public IndicatorClickEventArgs(Scintilla scintilla, Keys modifiers, int bytePosition) : base(scintilla, bytePosition)
+        public IndicatorClickEventArgs(Scintilla scintilla, Keys modifiers, long bytePosition) : base(scintilla, bytePosition)
         {
             Modifiers = modifiers;
         }

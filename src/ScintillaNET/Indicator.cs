@@ -45,11 +45,11 @@ namespace ScintillaNET
         /// to return the end position of the range where this indicator is not in use (the negative space). If this
         /// indicator is not in use anywhere within the document the return value will be 0.
         /// </remarks>
-        public int End(int position)
+        public long End(long position)
         {
             position = Helpers.Clamp(position, 0, scintilla.TextLength);
             position = scintilla.Lines.CharToBytePosition(position);
-            position = scintilla.DirectMessage(NativeMethods.SCI_INDICATOREND, new IntPtr(Index), new IntPtr(position)).ToInt32();
+            position = scintilla.DirectMessage(NativeMethods.SCI_INDICATOREND, new IntPtr(Index), new IntPtr(position)).ToInt64();
             return scintilla.Lines.ByteToCharPosition(position);
         }
 
@@ -64,11 +64,11 @@ namespace ScintillaNET
         /// to return the start position of the range where this indicator is not in use (the negative space). If this
         /// indicator is not in use anywhere within the document the return value will be 0.
         /// </remarks>
-        public int Start(int position)
+        public long Start(long position)
         {
             position = Helpers.Clamp(position, 0, scintilla.TextLength);
             position = scintilla.Lines.CharToBytePosition(position);
-            position = scintilla.DirectMessage(NativeMethods.SCI_INDICATORSTART, new IntPtr(Index), new IntPtr(position)).ToInt32();
+            position = scintilla.DirectMessage(NativeMethods.SCI_INDICATORSTART, new IntPtr(Index), new IntPtr(position)).ToInt64();
             return scintilla.Lines.ByteToCharPosition(position);
         }
 
@@ -77,7 +77,7 @@ namespace ScintillaNET
         /// </summary>
         /// <param name="position">The zero-based document position to get the indicator value for.</param>
         /// <returns>The user-defined value at the specified <paramref name="position" />.</returns>
-        public int ValueAt(int position)
+        public int ValueAt(long position)
         {
             position = Helpers.Clamp(position, 0, scintilla.TextLength);
             position = scintilla.Lines.CharToBytePosition(position);
