@@ -1,12 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+/*
+ * IndicatorStyle.cs --
+ *
+ * Copyright (c) 2017 Jacob Slusser, https://github.com/jacobslusser
+ * Copyright (c) 2019-2026 by Joe Mistachkin.  All rights reserved.
+ *
+ * This file is part of ScintillaNET, which is distributed under the MIT
+ * License; see the file "LICENSE" for full terms and a DISCLAIMER OF ALL
+ * WARRANTIES.
+ *
+ * RCS: @(#) $Id: $
+ */
 
 namespace ScintillaNET
 {
     /// <summary>
     /// The visual appearance of an indicator.
     /// </summary>
+    [ObjectId("274cd141-b4dd-4aed-9ebe-98642abf4f42")]
     public enum IndicatorStyle
     {
         /// <summary>

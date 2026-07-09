@@ -1,12 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+/*
+ * Command.cs --
+ *
+ * Copyright (c) 2017 Jacob Slusser, https://github.com/jacobslusser
+ * Copyright (c) 2019-2026 by Joe Mistachkin.  All rights reserved.
+ *
+ * This file is part of ScintillaNET, which is distributed under the MIT
+ * License; see the file "LICENSE" for full terms and a DISCLAIMER OF ALL
+ * WARRANTIES.
+ *
+ * RCS: @(#) $Id: $
+ */
 
 namespace ScintillaNET
 {
     /// <summary>
     /// Actions which can be performed by the application or bound to keys in a <see cref="Scintilla" /> control.
     /// </summary>
+    [ObjectId("8bb369f6-a618-43f2-8f9d-b31386ce1925")]
     public enum Command
     {
         /// <summary>

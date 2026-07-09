@@ -1,6 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+/*
+ * IndicatorFlags.cs --
+ *
+ * Copyright (c) 2017 Jacob Slusser, https://github.com/jacobslusser
+ * Copyright (c) 2019-2026 by Joe Mistachkin.  All rights reserved.
+ *
+ * This file is part of ScintillaNET, which is distributed under the MIT
+ * License; see the file "LICENSE" for full terms and a DISCLAIMER OF ALL
+ * WARRANTIES.
+ *
+ * RCS: @(#) $Id: $
+ */
+
+using System;
 
 namespace ScintillaNET
 {
@@ -9,6 +20,7 @@ namespace ScintillaNET
     /// </summary>
     /// <remarks>This enumeration has a FlagsAttribute attribute that allows a bitwise combination of its member values.</remarks>
     [Flags]
+    [ObjectId("3cb3314f-8b27-4fc4-81ed-9844a3068092")]
     public enum IndicatorFlags
     {
         /// <summary>

@@ -13,6 +13,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <OutputType>Library</OutputType>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <RootNamespace>ScintillaNET</RootNamespace>
     <AssemblyName>ScintillaNET</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

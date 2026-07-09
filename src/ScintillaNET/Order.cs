@@ -1,12 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+/*
+ * Order.cs --
+ *
+ * Copyright (c) 2017 Jacob Slusser, https://github.com/jacobslusser
+ * Copyright (c) 2019-2026 by Joe Mistachkin.  All rights reserved.
+ *
+ * This file is part of ScintillaNET, which is distributed under the MIT
+ * License; see the file "LICENSE" for full terms and a DISCLAIMER OF ALL
+ * WARRANTIES.
+ *
+ * RCS: @(#) $Id: $
+ */
 
 namespace ScintillaNET
 {
     /// <summary>
     /// The sorting order for autocompletion lists.
     /// </summary>
+    [ObjectId("80f8c843-994d-4fc2-a981-0b3910af9887")]
     public enum Order
     {
         /// <summary>

@@ -1,5 +1,6 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Preserve every file's exact bytes, including line endings; no EOL
+# normalization (source here is CRLF, per Eagle house style).
+* -text
 
 # Custom for Visual Studio
 *.cs     diff=csharp

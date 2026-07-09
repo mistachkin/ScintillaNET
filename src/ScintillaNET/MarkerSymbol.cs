@@ -1,12 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+/*
+ * MarkerSymbol.cs --
+ *
+ * Copyright (c) 2017 Jacob Slusser, https://github.com/jacobslusser
+ * Copyright (c) 2019-2026 by Joe Mistachkin.  All rights reserved.
+ *
+ * This file is part of ScintillaNET, which is distributed under the MIT
+ * License; see the file "LICENSE" for full terms and a DISCLAIMER OF ALL
+ * WARRANTIES.
+ *
+ * RCS: @(#) $Id: $
+ */
 
 namespace ScintillaNET
 {
     /// <summary>
     /// The symbol displayed by a <see cref="Marker" />
     /// </summary>
+    [ObjectId("6fd4bc07-4c88-4da2-9bc5-bb994a7baef9")]
     public enum MarkerSymbol
     {
         /// <summary>

@@ -1,6 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+/*
+ * LineEndType.cs --
+ *
+ * Copyright (c) 2017 Jacob Slusser, https://github.com/jacobslusser
+ * Copyright (c) 2019-2026 by Joe Mistachkin.  All rights reserved.
+ *
+ * This file is part of ScintillaNET, which is distributed under the MIT
+ * License; see the file "LICENSE" for full terms and a DISCLAIMER OF ALL
+ * WARRANTIES.
+ *
+ * RCS: @(#) $Id: $
+ */
+
+using System;
 
 namespace ScintillaNET
 {
@@ -11,6 +22,7 @@ namespace ScintillaNET
     /// <seealso cref="Scintilla.LineEndTypesAllowed" />
     /// <seealso cref="Scintilla.LineEndTypesActive" />
     [Flags]
+    [ObjectId("37db90f8-04e1-412f-a8fc-e12395f8bb63")]
     public enum LineEndType
     {
         /// <summary>

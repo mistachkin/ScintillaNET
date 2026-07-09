@@ -1,12 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+/*
+ * Phases.cs --
+ *
+ * Copyright (c) 2017 Jacob Slusser, https://github.com/jacobslusser
+ * Copyright (c) 2019-2026 by Joe Mistachkin.  All rights reserved.
+ *
+ * This file is part of ScintillaNET, which is distributed under the MIT
+ * License; see the file "LICENSE" for full terms and a DISCLAIMER OF ALL
+ * WARRANTIES.
+ *
+ * RCS: @(#) $Id: $
+ */
 
 namespace ScintillaNET
 {
     /// <summary>
     /// The number of phases used when drawing.
     /// </summary>
+    [ObjectId("d9c1f6f9-cada-408d-ad56-2fd6f8c97d54")]
     public enum Phases
     {
         /// <summary>

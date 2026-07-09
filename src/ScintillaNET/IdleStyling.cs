@@ -1,6 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+/*
+ * IdleStyling.cs --
+ *
+ * Copyright (c) 2017 Jacob Slusser, https://github.com/jacobslusser
+ * Copyright (c) 2019-2026 by Joe Mistachkin.  All rights reserved.
+ *
+ * This file is part of ScintillaNET, which is distributed under the MIT
+ * License; see the file "LICENSE" for full terms and a DISCLAIMER OF ALL
+ * WARRANTIES.
+ *
+ * RCS: @(#) $Id: $
+ */
 
 namespace ScintillaNET
 {
@@ -8,6 +17,7 @@ namespace ScintillaNET
     /// Possible strategies for styling text using application idle time.
     /// </summary>
     /// <seealso cref="Scintilla.IdleStyling" />
+    [ObjectId("5df23924-17a9-43a8-ac8a-7257d951d06e")]
     public enum IdleStyling
     {
         /// <summary>
