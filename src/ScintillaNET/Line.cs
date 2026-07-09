@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace ScintillaNET
@@ -81,8 +80,8 @@ namespace ScintillaNET
         public MarkerHandle MarkerAdd(int marker)
         {
             marker = Helpers.Clamp(marker, 0, scintilla.Markers.Count - 1);
-            var handle = scintilla.DirectMessage(NativeMethods.SCI_MARKERADD, new IntPtr(Index), new IntPtr(marker));
-            return new MarkerHandle { Value = handle };
+            IntPtr handle = scintilla.DirectMessage(NativeMethods.SCI_MARKERADD, new IntPtr(Index), new IntPtr(marker));
+            return new MarkerHandle(handle);
         }
 
         /// <summary>
@@ -91,7 +90,7 @@ namespace ScintillaNET
         /// <param name="markerMask">An unsigned 32-bit value with each bit cooresponding to one of the 32 zero-based <see cref="Margin" /> indexes to add.</param>
         public void MarkerAddSet(uint markerMask)
         {
-            var mask = unchecked((int)markerMask);
+            int mask = unchecked((int)markerMask);
             scintilla.DirectMessage(NativeMethods.SCI_MARKERADDSET, new IntPtr(Index), new IntPtr(mask));
         }
 
@@ -112,7 +111,7 @@ namespace ScintillaNET
         /// <returns>An unsigned 32-bit value with each bit cooresponding to one of the 32 zero-based <see cref="Marker" /> indexes.</returns>
         public uint MarkerGet()
         {
-            var mask = scintilla.DirectMessage(NativeMethods.SCI_MARKERGET, new IntPtr(Index)).ToInt32();
+            int mask = scintilla.DirectMessage(NativeMethods.SCI_MARKERGET, new IntPtr(Index)).ToInt32();
             return unchecked((uint)mask);
         }
 
@@ -124,7 +123,7 @@ namespace ScintillaNET
         /// <remarks>For example, the mask for marker index 10 is 1 shifted left 10 times (1 &lt;&lt; 10).</remarks>
         public long MarkerNext(uint markerMask)
         {
-            var mask = unchecked((int)markerMask);
+            int mask = unchecked((int)markerMask);
             return scintilla.DirectMessage(NativeMethods.SCI_MARKERNEXT, new IntPtr(Index), new IntPtr(mask)).ToInt64();
         }
 
@@ -136,7 +135,7 @@ namespace ScintillaNET
         /// <remarks>For example, the mask for marker index 10 is 1 shifted left 10 times (1 &lt;&lt; 10).</remarks>
         public long MarkerPrevious(uint markerMask)
         {
-            var mask = unchecked((int)markerMask);
+            int mask = unchecked((int)markerMask);
             return scintilla.DirectMessage(NativeMethods.SCI_MARKERPREVIOUS, new IntPtr(Index), new IntPtr(mask)).ToInt64();
         }
 
@@ -164,7 +163,7 @@ namespace ScintillaNET
             }
             else
             {
-                var bytes = Helpers.GetBytes(text, scintilla.Encoding, true);
+                byte[] bytes = Helpers.GetBytes(text, scintilla.Encoding, true);
                 fixed (byte* bp = bytes)
                     scintilla.DirectMessage(NativeMethods.SCI_TOGGLEFOLDSHOWTEXT, new IntPtr(Index), new IntPtr(bp));
             }
@@ -224,12 +223,12 @@ namespace ScintillaNET
         {
             get
             {
-                var length = scintilla.DirectMessage(NativeMethods.SCI_ANNOTATIONGETTEXT, new IntPtr(Index)).ToInt32();
+                int length = scintilla.DirectMessage(NativeMethods.SCI_ANNOTATIONGETTEXT, new IntPtr(Index)).ToInt32();
                 if (length == 0)
                     return new byte[0];
 
-                var text = new byte[length + 1];
-                var styles = new byte[length + 1];
+                byte[] text = new byte[length + 1];
+                byte[] styles = new byte[length + 1];
 
                 fixed (byte* textPtr = text)
                 fixed (byte* stylePtr = styles)
@@ -242,16 +241,16 @@ namespace ScintillaNET
             }
             set
             {
-                var length = scintilla.DirectMessage(NativeMethods.SCI_ANNOTATIONGETTEXT, new IntPtr(Index)).ToInt32();
+                int length = scintilla.DirectMessage(NativeMethods.SCI_ANNOTATIONGETTEXT, new IntPtr(Index)).ToInt32();
                 if (length == 0)
                     return;
 
-                var text = new byte[length + 1];
+                byte[] text = new byte[length + 1];
                 fixed (byte* textPtr = text)
                 {
                     scintilla.DirectMessage(NativeMethods.SCI_ANNOTATIONGETTEXT, new IntPtr(Index), new IntPtr(textPtr));
 
-                    var styles = Helpers.CharToByteStyles(value ?? new byte[0], textPtr, length, scintilla.Encoding);
+                    byte[] styles = Helpers.CharToByteStyles(value ?? new byte[0], textPtr, length, scintilla.Encoding);
                     fixed (byte* stylePtr = styles)
                         scintilla.DirectMessage(NativeMethods.SCI_ANNOTATIONSETSTYLES, new IntPtr(Index), new IntPtr(stylePtr));
                 }
@@ -266,11 +265,11 @@ namespace ScintillaNET
         {
             get
             {
-                var length = scintilla.DirectMessage(NativeMethods.SCI_ANNOTATIONGETTEXT, new IntPtr(Index)).ToInt32();
+                int length = scintilla.DirectMessage(NativeMethods.SCI_ANNOTATIONGETTEXT, new IntPtr(Index)).ToInt32();
                 if (length == 0)
                     return string.Empty;
 
-                var bytes = new byte[length + 1];
+                byte[] bytes = new byte[length + 1];
                 fixed (byte* bp = bytes)
                 {
                     scintilla.DirectMessage(NativeMethods.SCI_ANNOTATIONGETTEXT, new IntPtr(Index), new IntPtr(bp));
@@ -286,7 +285,7 @@ namespace ScintillaNET
                 }
                 else
                 {
-                    var bytes = Helpers.GetBytes(value, scintilla.Encoding, true);
+                    byte[] bytes = Helpers.GetBytes(value, scintilla.Encoding, true);
                     fixed (byte* bp = bytes)
                         scintilla.DirectMessage(NativeMethods.SCI_ANNOTATIONSETTEXT, new IntPtr(Index), new IntPtr(bp));
                 }
@@ -348,7 +347,7 @@ namespace ScintillaNET
             }
             set
             {
-                var expanded = (value ? new IntPtr(1) : IntPtr.Zero);
+                IntPtr expanded = (value ? new IntPtr(1) : IntPtr.Zero);
                 scintilla.DirectMessage(NativeMethods.SCI_SETFOLDEXPANDED, new IntPtr(Index), expanded);
             }
         }
@@ -361,12 +360,12 @@ namespace ScintillaNET
         {
             get
             {
-                var level = scintilla.DirectMessage(NativeMethods.SCI_GETFOLDLEVEL, new IntPtr(Index)).ToInt32();
+                int level = scintilla.DirectMessage(NativeMethods.SCI_GETFOLDLEVEL, new IntPtr(Index)).ToInt32();
                 return (level & NativeMethods.SC_FOLDLEVELNUMBERMASK);
             }
             set
             {
-                var bits = (int)FoldLevelFlags;
+                int bits = (int)FoldLevelFlags;
                 bits |= value;
 
                 scintilla.DirectMessage(NativeMethods.SCI_SETFOLDLEVEL, new IntPtr(Index), new IntPtr(bits));
@@ -381,12 +380,12 @@ namespace ScintillaNET
         {
             get
             {
-                var flags = scintilla.DirectMessage(NativeMethods.SCI_GETFOLDLEVEL, new IntPtr(Index)).ToInt32();
+                int flags = scintilla.DirectMessage(NativeMethods.SCI_GETFOLDLEVEL, new IntPtr(Index)).ToInt32();
                 return (FoldLevelFlags)(flags & ~NativeMethods.SC_FOLDLEVELNUMBERMASK);
             }
             set
             {
-                var bits = FoldLevel;
+                int bits = FoldLevel;
                 bits |= (int)value;
 
                 scintilla.DirectMessage(NativeMethods.SCI_SETFOLDLEVEL, new IntPtr(Index), new IntPtr(bits));
@@ -475,12 +474,12 @@ namespace ScintillaNET
         {
             get
             {
-                var length = scintilla.DirectMessage(NativeMethods.SCI_MARGINGETTEXT, new IntPtr(Index)).ToInt32();
+                int length = scintilla.DirectMessage(NativeMethods.SCI_MARGINGETTEXT, new IntPtr(Index)).ToInt32();
                 if (length == 0)
                     return new byte[0];
 
-                var text = new byte[length + 1];
-                var styles = new byte[length + 1];
+                byte[] text = new byte[length + 1];
+                byte[] styles = new byte[length + 1];
 
                 fixed (byte* textPtr = text)
                 fixed (byte* stylePtr = styles)
@@ -493,16 +492,16 @@ namespace ScintillaNET
             }
             set
             {
-                var length = scintilla.DirectMessage(NativeMethods.SCI_MARGINGETTEXT, new IntPtr(Index)).ToInt32();
+                int length = scintilla.DirectMessage(NativeMethods.SCI_MARGINGETTEXT, new IntPtr(Index)).ToInt32();
                 if (length == 0)
                     return;
 
-                var text = new byte[length + 1];
+                byte[] text = new byte[length + 1];
                 fixed (byte* textPtr = text)
                 {
                     scintilla.DirectMessage(NativeMethods.SCI_MARGINGETTEXT, new IntPtr(Index), new IntPtr(textPtr));
 
-                    var styles = Helpers.CharToByteStyles(value ?? new byte[0], textPtr, length, scintilla.Encoding);
+                    byte[] styles = Helpers.CharToByteStyles(value ?? new byte[0], textPtr, length, scintilla.Encoding);
                     fixed (byte* stylePtr = styles)
                         scintilla.DirectMessage(NativeMethods.SCI_MARGINSETSTYLES, new IntPtr(Index), new IntPtr(stylePtr));
                 }
@@ -518,11 +517,11 @@ namespace ScintillaNET
         {
             get
             {
-                var length = scintilla.DirectMessage(NativeMethods.SCI_MARGINGETTEXT, new IntPtr(Index)).ToInt32();
+                int length = scintilla.DirectMessage(NativeMethods.SCI_MARGINGETTEXT, new IntPtr(Index)).ToInt32();
                 if (length == 0)
                     return string.Empty;
 
-                var bytes = new byte[length + 1];
+                byte[] bytes = new byte[length + 1];
                 fixed (byte* bp = bytes)
                 {
                     scintilla.DirectMessage(NativeMethods.SCI_MARGINGETTEXT, new IntPtr(Index), new IntPtr(bp));
@@ -538,7 +537,7 @@ namespace ScintillaNET
                 }
                 else
                 {
-                    var bytes = Helpers.GetBytes(value, scintilla.Encoding, true);
+                    byte[] bytes = Helpers.GetBytes(value, scintilla.Encoding, true);
                     fixed (byte* bp = bytes)
                         scintilla.DirectMessage(NativeMethods.SCI_MARGINSETTEXT, new IntPtr(Index), new IntPtr(bp));
                 }
@@ -566,13 +565,13 @@ namespace ScintillaNET
         {
             get
             {
-                var start = scintilla.DirectMessage(NativeMethods.SCI_POSITIONFROMLINE, new IntPtr(Index));
-                var length = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(Index));
-                var ptr = scintilla.DirectMessage(NativeMethods.SCI_GETRANGEPOINTER, start, length);
+                IntPtr start = scintilla.DirectMessage(NativeMethods.SCI_POSITIONFROMLINE, new IntPtr(Index));
+                IntPtr length = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(Index));
+                IntPtr ptr = scintilla.DirectMessage(NativeMethods.SCI_GETRANGEPOINTER, start, length);
                 if (ptr == IntPtr.Zero)
                     return string.Empty;
 
-                var text = new string((sbyte*)ptr, 0, length.ToInt32(), scintilla.Encoding);
+                string text = new string((sbyte*)ptr, 0, length.ToInt32(), scintilla.Encoding);
                 return text;
             }
         }

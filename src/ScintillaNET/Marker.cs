@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
-using System.Linq;
 using System.Text;
 
 namespace ScintillaNET
@@ -73,7 +72,7 @@ namespace ScintillaNET
             scintilla.DirectMessage(NativeMethods.SCI_RGBAIMAGESETWIDTH, new IntPtr(image.Width));
             scintilla.DirectMessage(NativeMethods.SCI_RGBAIMAGESETHEIGHT, new IntPtr(image.Height));
 
-            var bytes = Helpers.BitmapToArgb(image);
+            byte[] bytes = Helpers.BitmapToArgb(image);
             fixed (byte* bp = bytes)
                 scintilla.DirectMessage(NativeMethods.SCI_MARKERDEFINERGBAIMAGE, new IntPtr(Index), new IntPtr(bp));
         }
@@ -109,7 +108,7 @@ namespace ScintillaNET
         /// <seealso cref="SetAlpha" />
         public void SetBackColor(Color color)
         {
-            var colour = ColorTranslator.ToWin32(color);
+            int colour = ColorTranslator.ToWin32(color);
             scintilla.DirectMessage(NativeMethods.SCI_MARKERSETBACK, new IntPtr(Index), new IntPtr(colour));
         }
 
@@ -119,7 +118,7 @@ namespace ScintillaNET
         /// <param name="color">The <see cref="Marker" /> foreground Color. The default is Black.</param>
         public void SetForeColor(Color color)
         {
-            var colour = ColorTranslator.ToWin32(color);
+            int colour = ColorTranslator.ToWin32(color);
             scintilla.DirectMessage(NativeMethods.SCI_MARKERSETFORE, new IntPtr(Index), new IntPtr(colour));
         }
 
@@ -144,7 +143,7 @@ namespace ScintillaNET
             }
             set
             {
-                var markerSymbol = (int)value;
+                int markerSymbol = (int)value;
                 scintilla.DirectMessage(NativeMethods.SCI_MARKERDEFINE, new IntPtr(Index), new IntPtr(markerSymbol));
             }
         }

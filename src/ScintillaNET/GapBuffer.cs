@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -33,15 +32,15 @@ namespace ScintillaNET
             {
                 // How much to grow the buffer is a tricky question.
                 // Our current algo will double the capacity unless that's not enough.
-                var minCapacity = Count + length;
-                var newCapacity = (int)Math.Min((long)buffer.Length * 2, int.MaxValue);
+                int minCapacity = Count + length;
+                int newCapacity = (int)Math.Min((long)buffer.Length * 2, int.MaxValue);
                 if (newCapacity < minCapacity)
                 {
                     newCapacity = minCapacity;
                 }
 
-                var newBuffer = new T[newCapacity];
-                var newGapEnd = newBuffer.Length - (buffer.Length - gapEnd);
+                T[] newBuffer = new T[newCapacity];
+                int newGapEnd = newBuffer.Length - (buffer.Length - gapEnd);
 
                 Array.Copy(buffer, 0, newBuffer, 0, gapStart);
                 Array.Copy(buffer, gapEnd, newBuffer, newGapEnd, newBuffer.Length - newGapEnd);
@@ -52,7 +51,7 @@ namespace ScintillaNET
 
         public IEnumerator<T> GetEnumerator()
         {
-            var count = Count;
+            int count = Count;
             for (int i = 0; i < count; i++)
                 yield return this[i];
 
@@ -75,7 +74,7 @@ namespace ScintillaNET
 
         public void InsertRange(int index, ICollection<T> collection)
         {
-            var count = collection.Count;
+            int count = collection.Count;
             if (count > 0)
             {
                 PlaceGapStart(index);
@@ -99,8 +98,8 @@ namespace ScintillaNET
                 else if (index < gapStart)
                 {
                     // Move gap left (copy contents right)
-                    var length = (gapStart - index);
-                    var deltaLength = (gapEnd - gapStart < length ? gapEnd - gapStart : length);
+                    int length = (gapStart - index);
+                    int deltaLength = (gapEnd - gapStart < length ? gapEnd - gapStart : length);
                     Array.Copy(buffer, index, buffer, gapEnd - length, length);
                     gapStart -= length;
                     gapEnd -= length;
@@ -110,8 +109,8 @@ namespace ScintillaNET
                 else
                 {
                     // Move gap right (copy contents left)
-                    var length = (index - gapStart);
-                    var deltaIndex = (index > gapEnd ? index : gapEnd);
+                    int length = (index - gapStart);
+                    int deltaIndex = (index > gapEnd ? index : gapEnd);
                     Array.Copy(buffer, gapEnd, buffer, gapStart, length);
                     gapStart += length;
                     gapEnd += length;
@@ -152,7 +151,7 @@ namespace ScintillaNET
         {
             get
             {
-                var list = new List<T>(this);
+                List<T> list = new List<T>(this);
                 return list;
             }
         }

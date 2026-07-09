@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace ScintillaNET
@@ -20,7 +19,7 @@ namespace ScintillaNET
         {
             get
             {
-                var pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNANCHOR, new IntPtr(Index)).ToInt64();
+                long pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNANCHOR, new IntPtr(Index)).ToInt64();
                 if (pos <= 0)
                     return pos;
 
@@ -59,7 +58,7 @@ namespace ScintillaNET
         {
             get
             {
-                var pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNCARET, new IntPtr(Index)).ToInt64();
+                long pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNCARET, new IntPtr(Index)).ToInt64();
                 if (pos <= 0)
                     return pos;
 
@@ -98,7 +97,7 @@ namespace ScintillaNET
         {
             get
             {
-                var pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNEND, new IntPtr(Index)).ToInt64();
+                long pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNEND, new IntPtr(Index)).ToInt64();
                 if (pos <= 0)
                     return pos;
 
@@ -126,7 +125,7 @@ namespace ScintillaNET
         {
             get
             {
-                var pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNSTART, new IntPtr(Index)).ToInt64();
+                long pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNSTART, new IntPtr(Index)).ToInt64();
                 if (pos <= 0)
                     return pos;
 

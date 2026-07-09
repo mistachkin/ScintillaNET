@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace ScintillaNET
@@ -15,6 +14,11 @@ namespace ScintillaNET
     public struct Document
     {
         internal IntPtr Value;
+
+        internal Document(IntPtr value)
+        {
+            this.Value = value;
+        }
 
         /// <summary>
         /// A read-only field that represents an uninitialized document.

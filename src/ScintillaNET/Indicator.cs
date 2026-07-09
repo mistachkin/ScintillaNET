@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using System.Text;
 
 namespace ScintillaNET
@@ -139,12 +138,12 @@ namespace ScintillaNET
         {
             get
             {
-                var color = scintilla.DirectMessage(NativeMethods.SCI_INDICGETFORE, new IntPtr(Index)).ToInt32();
+                int color = scintilla.DirectMessage(NativeMethods.SCI_INDICGETFORE, new IntPtr(Index)).ToInt32();
                 return ColorTranslator.FromWin32(color);
             }
             set
             {
-                var color = ColorTranslator.ToWin32(value);
+                int color = ColorTranslator.ToWin32(value);
                 scintilla.DirectMessage(NativeMethods.SCI_INDICSETFORE, new IntPtr(Index), new IntPtr(color));
             }
         }
@@ -162,12 +161,12 @@ namespace ScintillaNET
         {
             get
             {
-                var color = scintilla.DirectMessage(NativeMethods.SCI_INDICGETHOVERFORE, new IntPtr(Index)).ToInt32();
+                int color = scintilla.DirectMessage(NativeMethods.SCI_INDICGETHOVERFORE, new IntPtr(Index)).ToInt32();
                 return ColorTranslator.FromWin32(color);
             }
             set
             {
-                var color = ColorTranslator.ToWin32(value);
+                int color = ColorTranslator.ToWin32(value);
                 scintilla.DirectMessage(NativeMethods.SCI_INDICSETHOVERFORE, new IntPtr(Index), new IntPtr(color));
             }
         }
@@ -189,7 +188,7 @@ namespace ScintillaNET
             }
             set
             {
-                var style = (int)value;
+                int style = (int)value;
                 scintilla.DirectMessage(NativeMethods.SCI_INDICSETHOVERSTYLE, new IntPtr(Index), new IntPtr(style));
             }
         }
@@ -234,7 +233,7 @@ namespace ScintillaNET
             }
             set
             {
-                var style = (int)value;
+                int style = (int)value;
                 scintilla.DirectMessage(NativeMethods.SCI_INDICSETSTYLE, new IntPtr(Index), new IntPtr(style));
             }
         }
@@ -252,7 +251,7 @@ namespace ScintillaNET
             }
             set
             {
-                var under = (value ? new IntPtr(1) : IntPtr.Zero);
+                IntPtr under = (value ? new IntPtr(1) : IntPtr.Zero);
                 scintilla.DirectMessage(NativeMethods.SCI_INDICSETUNDER, new IntPtr(Index), under);
             }
         }

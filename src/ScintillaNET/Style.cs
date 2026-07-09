@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Linq;
 using System.Text;
 
 namespace ScintillaNET
@@ -99,7 +98,7 @@ namespace ScintillaNET
         {
             get
             {
-                var color = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETBACK, new IntPtr(Index), IntPtr.Zero).ToInt32();
+                int color = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETBACK, new IntPtr(Index), IntPtr.Zero).ToInt32();
                 return ColorTranslator.FromWin32(color);
             }
             set
@@ -107,7 +106,7 @@ namespace ScintillaNET
                 if (value.IsEmpty)
                     value = Color.White;
 
-                var color = ColorTranslator.ToWin32(value);
+                int color = ColorTranslator.ToWin32(value);
                 scintilla.DirectMessage(NativeMethods.SCI_STYLESETBACK, new IntPtr(Index), new IntPtr(color));
             }
         }
@@ -125,7 +124,7 @@ namespace ScintillaNET
             }
             set
             {
-                var bold = (value ? new IntPtr(1) : IntPtr.Zero);
+                IntPtr bold = (value ? new IntPtr(1) : IntPtr.Zero);
                 scintilla.DirectMessage(NativeMethods.SCI_STYLESETBOLD, new IntPtr(Index), bold);
             }
         }
@@ -139,13 +138,13 @@ namespace ScintillaNET
         {
             get
             {
-                var @case = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETCASE, new IntPtr(Index), IntPtr.Zero).ToInt32();
+                int @case = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETCASE, new IntPtr(Index), IntPtr.Zero).ToInt32();
                 return (StyleCase)@case;
             }
             set
             {
                 // Just an excuse to use @... syntax
-                var @case = (int)value;
+                int @case = (int)value;
                 scintilla.DirectMessage(NativeMethods.SCI_STYLESETCASE, new IntPtr(Index), new IntPtr(@case));
             }
         }
@@ -163,7 +162,7 @@ namespace ScintillaNET
             }
             set
             {
-                var fillLine = (value ? new IntPtr(1) : IntPtr.Zero);
+                IntPtr fillLine = (value ? new IntPtr(1) : IntPtr.Zero);
                 scintilla.DirectMessage(NativeMethods.SCI_STYLESETEOLFILLED, new IntPtr(Index), fillLine);
             }
         }
@@ -177,17 +176,17 @@ namespace ScintillaNET
         {
             get
             {
-                var length = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETFONT, new IntPtr(Index), IntPtr.Zero).ToInt32();
+                int length = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETFONT, new IntPtr(Index), IntPtr.Zero).ToInt32();
                 // SCI_STYLEGETFONT returns the name length but writes length+1 bytes
                 // (name plus a NUL terminator), so the buffer needs the extra byte.
-                var font = new byte[length + 1];
+                byte[] font = new byte[length + 1];
                 unsafe
                 {
                     fixed (byte* bp = font)
                         scintilla.DirectMessage(NativeMethods.SCI_STYLEGETFONT, new IntPtr(Index), new IntPtr(bp));
                 }
 
-                var name = Encoding.UTF8.GetString(font, 0, length);
+                string name = Encoding.UTF8.GetString(font, 0, length);
                 return name;
             }
             set
@@ -196,7 +195,7 @@ namespace ScintillaNET
                     value = "Verdana";
 
                 // Scintilla expects UTF-8
-                var font = Helpers.GetBytes(value, Encoding.UTF8, true);
+                byte[] font = Helpers.GetBytes(value, Encoding.UTF8, true);
                 unsafe
                 {
                     fixed (byte* bp = font)
@@ -214,7 +213,7 @@ namespace ScintillaNET
         {
             get
             {
-                var color = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETFORE, new IntPtr(Index), IntPtr.Zero).ToInt32();
+                int color = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETFORE, new IntPtr(Index), IntPtr.Zero).ToInt32();
                 return ColorTranslator.FromWin32(color);
             }
             set
@@ -222,7 +221,7 @@ namespace ScintillaNET
                 if (value.IsEmpty)
                     value = Color.Black;
 
-                var color = ColorTranslator.ToWin32(value);
+                int color = ColorTranslator.ToWin32(value);
                 scintilla.DirectMessage(NativeMethods.SCI_STYLESETFORE, new IntPtr(Index), new IntPtr(color));
             }
         }
@@ -239,7 +238,7 @@ namespace ScintillaNET
             }
             set
             {
-                var hotspot = (value ? new IntPtr(1) : IntPtr.Zero);
+                IntPtr hotspot = (value ? new IntPtr(1) : IntPtr.Zero);
                 scintilla.DirectMessage(NativeMethods.SCI_STYLESETHOTSPOT, new IntPtr(Index), hotspot);
             }
         }
@@ -262,7 +261,7 @@ namespace ScintillaNET
             }
             set
             {
-                var italic = (value ? new IntPtr(1) : IntPtr.Zero);
+                IntPtr italic = (value ? new IntPtr(1) : IntPtr.Zero);
                 scintilla.DirectMessage(NativeMethods.SCI_STYLESETITALIC, new IntPtr(Index), italic);
             }
         }
@@ -291,12 +290,12 @@ namespace ScintillaNET
         {
             get
             {
-                var fraction = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETSIZEFRACTIONAL, new IntPtr(Index), IntPtr.Zero).ToInt32();
+                int fraction = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETSIZEFRACTIONAL, new IntPtr(Index), IntPtr.Zero).ToInt32();
                 return (float)fraction / NativeMethods.SC_FONT_SIZE_MULTIPLIER;
             }
             set
             {
-                var fraction = (int)Math.Round(value * NativeMethods.SC_FONT_SIZE_MULTIPLIER);
+                int fraction = (int)Math.Round(value * NativeMethods.SC_FONT_SIZE_MULTIPLIER);
                 scintilla.DirectMessage(NativeMethods.SCI_STYLESETSIZEFRACTIONAL, new IntPtr(Index), new IntPtr(fraction));
             }
         }
@@ -313,7 +312,7 @@ namespace ScintillaNET
             }
             set
             {
-                var underline = (value ? new IntPtr(1) : IntPtr.Zero);
+                IntPtr underline = (value ? new IntPtr(1) : IntPtr.Zero);
                 scintilla.DirectMessage(NativeMethods.SCI_STYLESETUNDERLINE, new IntPtr(Index), underline);
             }
         }
@@ -330,7 +329,7 @@ namespace ScintillaNET
             }
             set
             {
-                var visible = (value ? new IntPtr(1) : IntPtr.Zero);
+                IntPtr visible = (value ? new IntPtr(1) : IntPtr.Zero);
                 scintilla.DirectMessage(NativeMethods.SCI_STYLESETVISIBLE, new IntPtr(Index), visible);
             }
         }

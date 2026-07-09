@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Text;
 
 namespace ScintillaNET
@@ -114,7 +113,7 @@ namespace ScintillaNET
             }
             set
             {
-                var options = (int)value;
+                int options = (int)value;
                 scintilla.DirectMessage(NativeMethods.SCI_SETMARGINOPTIONS, new IntPtr(options));
             }
         }

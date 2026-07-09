@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace ScintillaNET
@@ -240,8 +239,8 @@ namespace ScintillaNET
 
         private static Dictionary<string, Lexer> BuildReverse()
         {
-            var reverse = new Dictionary<string, Lexer>(StringComparer.Ordinal);
-            foreach (var pair in toName)
+            Dictionary<string, Lexer> reverse = new Dictionary<string, Lexer>(StringComparer.Ordinal);
+            foreach (KeyValuePair<Lexer, string> pair in toName)
                 reverse[pair.Value] = pair.Key;
 
             return reverse;

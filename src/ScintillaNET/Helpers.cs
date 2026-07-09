@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
@@ -26,7 +25,7 @@ namespace ScintillaNET
 
         #region Methods
 
-        public static long CopyTo(this Stream source, Stream destination)
+        public static long CopyTo(Stream source, Stream destination)
         {
           byte[] buffer = new byte[2048];
           int bytesRead;
@@ -39,20 +38,28 @@ namespace ScintillaNET
           return totalBytes;
         }
 
+        private static int TotalCount(List<ArraySegment<byte>> segments)
+        {
+            int total = 0;
+            foreach (ArraySegment<byte> segment in segments)
+                total += segment.Count;
+            return total;
+        }
+
         public static unsafe byte[] BitmapToArgb(Bitmap image)
         {
             // This code originally used Image.LockBits and some fast byte copying, however, the endianness
             // of the image formats was making my brain hurt. For now I'm going to use the slow but simple
             // GetPixel approach.
 
-            var bytes = new byte[4 * image.Width * image.Height];
+            byte[] bytes = new byte[4 * image.Width * image.Height];
 
-            var i = 0;
+            int i = 0;
             for (int y = 0; y < image.Height; y++)
             {
                 for (int x = 0; x < image.Width; x++)
                 {
-                    var color = image.GetPixel(x, y);
+                    Color color = image.GetPixel(x, y);
                     bytes[i++] = color.R;
                     bytes[i++] = color.G;
                     bytes[i++] = color.B;
@@ -79,24 +86,24 @@ namespace ScintillaNET
             // surrogate pair) all take that byte's style. Decoder.Convert has no pointer
             // overload on the older target frameworks, hence the copy to a managed byte[].
 
-            var result = new byte[encoding.GetCharCount(text, length)];
+            byte[] result = new byte[encoding.GetCharCount(text, length)];
             if (result.Length == 0)
                 return result;
 
-            var bytes = new byte[length];
+            byte[] bytes = new byte[length];
             Marshal.Copy((IntPtr)text, bytes, 0, length);
 
-            var decoder = encoding.GetDecoder();
-            var scratch = new char[2];
-            var charPos = 0;
+            Decoder decoder = encoding.GetDecoder();
+            char[] scratch = new char[2];
+            int charPos = 0;
             int bytesUsed, units;
             bool completed;
 
-            for (var bytePos = 0; bytePos < length && charPos < result.Length; bytePos++)
+            for (int bytePos = 0; bytePos < length && charPos < result.Length; bytePos++)
             {
                 decoder.Convert(bytes, bytePos, 1, scratch, 0, 2, false, out bytesUsed, out units, out completed);
-                var style = *(styles + bytePos);
-                for (var i = 0; i < units && charPos < result.Length; i++)
+                byte style = *(styles + bytePos);
+                for (int i = 0; i < units && charPos < result.Length; i++)
                     result[charPos++] = style;
             }
 
@@ -105,8 +112,8 @@ namespace ScintillaNET
             if (charPos < result.Length)
             {
                 decoder.Convert(bytes, length, 0, scratch, 0, 2, true, out bytesUsed, out units, out completed);
-                var style = length > 0 ? *(styles + (length - 1)) : (byte)0;
-                for (var i = 0; i < units && charPos < result.Length; i++)
+                byte style = length > 0 ? *(styles + (length - 1)) : (byte)0;
+                for (int i = 0; i < units && charPos < result.Length; i++)
                     result[charPos++] = style;
             }
 
@@ -122,20 +129,20 @@ namespace ScintillaNET
             // consistency / cross-runtime reasons; every byte of a character takes that
             // character's style (the style at its first UTF-16 unit).
 
-            var result = new byte[length];
+            byte[] result = new byte[length];
             if (length == 0 || styles.Length == 0)
                 return result;
 
-            var bytes = new byte[length];
+            byte[] bytes = new byte[length];
             Marshal.Copy((IntPtr)text, bytes, 0, length);
 
-            var decoder = encoding.GetDecoder();
-            var scratch = new char[2];
-            var charPos = 0;
+            Decoder decoder = encoding.GetDecoder();
+            char[] scratch = new char[2];
+            int charPos = 0;
             int bytesUsed, units;
             bool completed;
 
-            for (var bytePos = 0; bytePos < length && charPos < styles.Length; bytePos++)
+            for (int bytePos = 0; bytePos < length && charPos < styles.Length; bytePos++)
             {
                 result[bytePos] = styles[charPos];
                 decoder.Convert(bytes, bytePos, 1, scratch, 0, 2, false, out bytesUsed, out units, out completed);
@@ -151,11 +158,11 @@ namespace ScintillaNET
         // returned handle; the caller frees it only if SetClipboardData fails.
         private static IntPtr CopyToMovableHGlobal(IntPtr source, int length)
         {
-            var hGlobal = NativeMethods.GlobalAlloc(NativeMethods.GMEM_MOVEABLE, new UIntPtr((uint)length));
+            IntPtr hGlobal = NativeMethods.GlobalAlloc(NativeMethods.GMEM_MOVEABLE, new UIntPtr((uint)length));
             if (hGlobal == IntPtr.Zero)
                 return IntPtr.Zero;
 
-            var dest = NativeMethods.GlobalLock(hGlobal);
+            IntPtr dest = NativeMethods.GlobalLock(hGlobal);
             if (dest == IntPtr.Zero)
             {
                 NativeMethods.GlobalFree(hGlobal);
@@ -252,13 +259,13 @@ namespace ScintillaNET
                     registeredFormats = true;
                 }
 
-                var lineCopy = false;
+                bool lineCopy = false;
                 StyleData[] styles = null;
                 List<ArraySegment<byte>> styledSegments = null;
 
                 if (useSelection)
                 {
-                    var selIsEmpty = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONEMPTY) != IntPtr.Zero;
+                    bool selIsEmpty = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONEMPTY) != IntPtr.Zero;
                     if (selIsEmpty)
                     {
                         if (allowLine)
@@ -323,8 +330,8 @@ namespace ScintillaNET
                 byte[] bytes;
 
                 // Write HTML
-                using (var ms = new NativeMemoryStream(styledSegments.Sum(s => s.Count)))
-                using (var tw = new StreamWriter(ms, new UTF8Encoding(false)))
+                using (NativeMemoryStream ms = new NativeMemoryStream(TotalCount(styledSegments)))
+                using (StreamWriter tw = new StreamWriter(ms, new UTF8Encoding(false)))
                 {
                     const int INDEX_START_HTML = 23;
                     const int INDEX_START_FRAGMENT = 65;
@@ -403,19 +410,19 @@ namespace ScintillaNET
                     tw.Write(@"<div id=""segments""><span class=""s{0}"">", Style.Default);
                     tw.Flush();
 
-                    var tabSize = scintilla.DirectMessage(NativeMethods.SCI_GETTABWIDTH).ToInt32();
-                    var tab = new string(' ', tabSize);
+                    int tabSize = scintilla.DirectMessage(NativeMethods.SCI_GETTABWIDTH).ToInt32();
+                    string tab = new string(' ', tabSize);
 
                     tw.AutoFlush = true;
-                    var lastStyle = Style.Default;
-                    var unicodeLineEndings = ((scintilla.DirectMessage(NativeMethods.SCI_GETLINEENDTYPESACTIVE).ToInt32() & NativeMethods.SC_LINE_END_TYPE_UNICODE) > 0);
-                    foreach (var seg in styledSegments)
+                    int lastStyle = Style.Default;
+                    bool unicodeLineEndings = ((scintilla.DirectMessage(NativeMethods.SCI_GETLINEENDTYPESACTIVE).ToInt32() & NativeMethods.SC_LINE_END_TYPE_UNICODE) > 0);
+                    foreach (ArraySegment<byte> seg in styledSegments)
                     {
-                        var endOffset = seg.Offset + seg.Count;
+                        int endOffset = seg.Offset + seg.Count;
                         for (int i = seg.Offset; i < endOffset; i += 2)
                         {
-                            var ch = seg.Array[i];
-                            var style = seg.Array[i + 1];
+                            byte ch = seg.Array[i];
+                            byte style = seg.Array[i + 1];
 
                             if (lastStyle != style)
                             {
@@ -535,7 +542,7 @@ namespace ScintillaNET
                     if (ms.Length <= 99999999)
                     {
                         // Hand the clipboard a movable copy; ms keeps and frees its own buffer.
-                        var hGlobal = CopyToMovableHGlobal(ms.Pointer, (int)ms.Length);
+                        IntPtr hGlobal = CopyToMovableHGlobal(ms.Pointer, (int)ms.Length);
                         if (hGlobal != IntPtr.Zero && NativeMethods.SetClipboardData(CF_HTML, hGlobal) == IntPtr.Zero)
                             NativeMethods.GlobalFree(hGlobal); // clipboard rejected it; release the copy
                     }
@@ -562,7 +569,7 @@ namespace ScintillaNET
             {
                 // Calculate twips per space
                 int twips;
-                var fontStyle = FontStyle.Regular;
+                FontStyle fontStyle = FontStyle.Regular;
                 if (styles[Style.Default].Weight >= 700)
                     fontStyle |= FontStyle.Bold;
                 if (styles[Style.Default].Italic != 0)
@@ -570,9 +577,9 @@ namespace ScintillaNET
                 if (styles[Style.Default].Underline != 0)
                     fontStyle |= FontStyle.Underline;
 
-                using (var graphics = scintilla.CreateGraphics())
-                using (var font = new Font(styles[Style.Default].FontName, styles[Style.Default].SizeF, fontStyle))
-                using (var format = new StringFormat(StringFormat.GenericTypographic))
+                using (Graphics graphics = scintilla.CreateGraphics())
+                using (Font font = new Font(styles[Style.Default].FontName, styles[Style.Default].SizeF, fontStyle))
+                using (StringFormat format = new StringFormat(StringFormat.GenericTypographic))
                 {
                     // Graphics.MeasureString ignores trailing whitespace unless
                     // MeasureTrailingSpaces is set, so measuring a lone " " returned
@@ -580,16 +587,16 @@ namespace ScintillaNET
                     // the real advance width of a space, then convert pixels -> twips
                     // (1 inch = 1440 twips).
                     format.FormatFlags |= StringFormatFlags.MeasureTrailingSpaces;
-                    var width = graphics.MeasureString(" ", font, PointF.Empty, format).Width;
+                    float width = graphics.MeasureString(" ", font, PointF.Empty, format).Width;
                     twips = (int)Math.Round((width / graphics.DpiX) * 1440);
                 }
 
                 // Write RTF
-                using (var ms = new NativeMemoryStream(styledSegments.Sum(s => s.Count)))
-                using (var tw = new StreamWriter(ms, Encoding.ASCII))
+                using (NativeMemoryStream ms = new NativeMemoryStream(TotalCount(styledSegments)))
+                using (StreamWriter tw = new StreamWriter(ms, Encoding.ASCII))
                 {
-                    var tabWidth = scintilla.DirectMessage(NativeMethods.SCI_GETTABWIDTH).ToInt32();
-                    var deftab = tabWidth * twips;
+                    int tabWidth = scintilla.DirectMessage(NativeMethods.SCI_GETTABWIDTH).ToInt32();
+                    int deftab = tabWidth * twips;
 
                     tw.WriteLine(@"{{\rtf1\ansi\deff0\deftab{0}", deftab);
                     tw.Flush();
@@ -597,7 +604,7 @@ namespace ScintillaNET
                     // Build the font table
                     tw.Write(@"{\fonttbl");
                     tw.Write(@"{{\f0 {0};}}", styles[Style.Default].FontName);
-                    var fontIndex = 1;
+                    int fontIndex = 1;
                     for (int i = 0; i < styles.Length; i++)
                     {
                         if (!styles[i].Used)
@@ -622,7 +629,7 @@ namespace ScintillaNET
                     tw.Write(@"\red{0}\green{1}\blue{2};", (styles[Style.Default].BackColor >> 0) & 0xFF, (styles[Style.Default].BackColor >> 8) & 0xFF, (styles[Style.Default].BackColor >> 16) & 0xFF);
                     styles[Style.Default].ForeColorIndex = 0;
                     styles[Style.Default].BackColorIndex = 1;
-                    var colorIndex = 2;
+                    int colorIndex = 2;
                     for (int i = 0; i < styles.Length; i++)
                     {
                         if (!styles[i].Used)
@@ -665,15 +672,15 @@ namespace ScintillaNET
                         tw.Write(@"\b");
 
                     tw.AutoFlush = true;
-                    var lastStyle = Style.Default;
-                    var unicodeLineEndings = ((scintilla.DirectMessage(NativeMethods.SCI_GETLINEENDTYPESACTIVE).ToInt32() & NativeMethods.SC_LINE_END_TYPE_UNICODE) > 0);
-                    foreach (var seg in styledSegments)
+                    int lastStyle = Style.Default;
+                    bool unicodeLineEndings = ((scintilla.DirectMessage(NativeMethods.SCI_GETLINEENDTYPESACTIVE).ToInt32() & NativeMethods.SC_LINE_END_TYPE_UNICODE) > 0);
+                    foreach (ArraySegment<byte> seg in styledSegments)
                     {
-                        var endOffset = seg.Offset + seg.Count;
+                        int endOffset = seg.Offset + seg.Count;
                         for (int i = seg.Offset; i < endOffset; i += 2)
                         {
-                            var ch = seg.Array[i];
-                            var style = seg.Array[i + 1];
+                            byte ch = seg.Array[i];
+                            byte style = seg.Array[i + 1];
 
                             if (lastStyle != style)
                             {
@@ -827,7 +834,7 @@ namespace ScintillaNET
 
                     // var str = GetString(ms.Pointer, (int)ms.Length, Encoding.ASCII);
                     // Hand the clipboard a movable copy; ms keeps and frees its own buffer.
-                    var hGlobal = CopyToMovableHGlobal(ms.Pointer, (int)ms.Length);
+                    IntPtr hGlobal = CopyToMovableHGlobal(ms.Pointer, (int)ms.Length);
                     if (hGlobal != IntPtr.Zero && NativeMethods.SetClipboardData(CF_RTF, hGlobal) == IntPtr.Zero)
                         NativeMethods.GlobalFree(hGlobal); // clipboard rejected it; release the copy
                 }
@@ -864,8 +871,8 @@ namespace ScintillaNET
         {
             fixed (char* cp = text)
             {
-                var count = encoding.GetByteCount(cp, length);
-                var buffer = new byte[count + (zeroTerminated ? 1 : 0)];
+                int count = encoding.GetByteCount(cp, length);
+                byte[] buffer = new byte[count + (zeroTerminated ? 1 : 0)];
                 fixed (byte* bp = buffer)
                     encoding.GetBytes(cp, length, bp, buffer.Length);
 
@@ -887,8 +894,8 @@ namespace ScintillaNET
             StyleData[] styles = null;
             List<ArraySegment<byte>> styledSegments = GetStyledSegments(scintilla, false, false, startBytePos, endBytePos, out styles);
 
-            using (var ms = new NativeMemoryStream(styledSegments.Sum(s => s.Count))) // Hint
-            using (var sw = new StreamWriter(ms, new UTF8Encoding(false)))
+            using (NativeMemoryStream ms = new NativeMemoryStream(TotalCount(styledSegments))) // Hint
+            using (StreamWriter sw = new StreamWriter(ms, new UTF8Encoding(false)))
             {
                 // Write the styles
                 sw.WriteLine(@"<style type=""text/css"" scoped="""">");
@@ -932,23 +939,23 @@ namespace ScintillaNET
 
                 sw.WriteLine("</style>");
 
-                var unicodeLineEndings = ((scintilla.DirectMessage(NativeMethods.SCI_GETLINEENDTYPESACTIVE).ToInt32() & NativeMethods.SC_LINE_END_TYPE_UNICODE) > 0);
-                var tabSize = scintilla.DirectMessage(NativeMethods.SCI_GETTABWIDTH).ToInt32();
-                var tab = new string(' ', tabSize);
-                var lastStyle = Style.Default;
+                bool unicodeLineEndings = ((scintilla.DirectMessage(NativeMethods.SCI_GETLINEENDTYPESACTIVE).ToInt32() & NativeMethods.SC_LINE_END_TYPE_UNICODE) > 0);
+                int tabSize = scintilla.DirectMessage(NativeMethods.SCI_GETTABWIDTH).ToInt32();
+                string tab = new string(' ', tabSize);
+                int lastStyle = Style.Default;
 
                 // Write the styled text
                 sw.Write(@"<div id=""segments""><span class=""s{0}"">", Style.Default);
                 sw.Flush();
                 sw.AutoFlush = true;
 
-                foreach (var seg in styledSegments)
+                foreach (ArraySegment<byte> seg in styledSegments)
                 {
-                    var endOffset = seg.Offset + seg.Count;
+                    int endOffset = seg.Offset + seg.Count;
                     for (int i = seg.Offset; i < endOffset; i += 2)
                     {
-                        var ch = seg.Array[i];
-                        var style = seg.Array[i + 1];
+                        byte ch = seg.Array[i];
+                        byte style = seg.Array[i + 1];
 
                         if (lastStyle != style)
                         {
@@ -1045,55 +1052,62 @@ namespace ScintillaNET
 
         public static unsafe string GetString(IntPtr bytes, int length, Encoding encoding)
         {
-            var ptr = (sbyte*)bytes;
-            var str = new string(ptr, 0, length, encoding);
+            sbyte* ptr = (sbyte*)bytes;
+            string str = new string(ptr, 0, length, encoding);
 
             return str;
         }
 
         private static unsafe List<ArraySegment<byte>> GetStyledSegments(Scintilla scintilla, bool currentSelection, bool currentLine, long startBytePos, long endBytePos, out StyleData[] styles)
         {
-            var segments = new List<ArraySegment<byte>>();
+            List<ArraySegment<byte>> segments = new List<ArraySegment<byte>>();
             if (currentSelection)
             {
                 // Get each selection as a segment.
                 // Rectangular selections are ordered top to bottom and have line breaks appended.
-                var ranges = new List<Tuple<long, long>>();
-                var selCount = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONS).ToInt32();
+                List<Tuple<long, long>> ranges = new List<Tuple<long, long>>();
+                int selCount = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONS).ToInt32();
                 for (int i = 0; i < selCount; i++)
                 {
-                    var selStartBytePos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNSTART, new IntPtr(i)).ToInt64();
-                    var selEndBytePos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNEND, new IntPtr(i)).ToInt64();
+                    long selStartBytePos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNSTART, new IntPtr(i)).ToInt64();
+                    long selEndBytePos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNEND, new IntPtr(i)).ToInt64();
 
                     ranges.Add(Tuple.Create(selStartBytePos, selEndBytePos));
                 }
 
-                var selIsRect = scintilla.DirectMessage(NativeMethods.SCI_SELECTIONISRECTANGLE) != IntPtr.Zero;
+                bool selIsRect = scintilla.DirectMessage(NativeMethods.SCI_SELECTIONISRECTANGLE) != IntPtr.Zero;
                 if (selIsRect)
-                    ranges.OrderBy(r => r.Item1); // Sort top to bottom
-
-                foreach (var range in ranges)
                 {
-                    var styledText = GetStyledText(scintilla, range.Item1, range.Item2, selIsRect);
+                    // NOTE: the original discarded OrderBy's result (a no-op); this
+                    // actually sorts the ranges top to bottom, as the comment intended.
+                    ranges.Sort(delegate(Tuple<long, long> x, Tuple<long, long> y)
+                    {
+                        return x.Item1.CompareTo(y.Item1);
+                    });
+                }
+
+                foreach (Tuple<long, long> range in ranges)
+                {
+                    ArraySegment<byte> styledText = GetStyledText(scintilla, range.Item1, range.Item2, selIsRect);
                     segments.Add(styledText);
                 }
             }
             else if (currentLine)
             {
                 // Get the current line
-                var mainSelection = scintilla.DirectMessage(NativeMethods.SCI_GETMAINSELECTION).ToInt32();
-                var mainCaretPos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNCARET, new IntPtr(mainSelection)).ToInt64();
-                var lineIndex = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, new IntPtr(mainCaretPos)).ToInt64();
-                var lineStartBytePos = scintilla.DirectMessage(NativeMethods.SCI_POSITIONFROMLINE, new IntPtr(lineIndex)).ToInt64();
-                var lineLength = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(lineIndex)).ToInt64();
+                int mainSelection = scintilla.DirectMessage(NativeMethods.SCI_GETMAINSELECTION).ToInt32();
+                long mainCaretPos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNCARET, new IntPtr(mainSelection)).ToInt64();
+                long lineIndex = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, new IntPtr(mainCaretPos)).ToInt64();
+                long lineStartBytePos = scintilla.DirectMessage(NativeMethods.SCI_POSITIONFROMLINE, new IntPtr(lineIndex)).ToInt64();
+                long lineLength = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(lineIndex)).ToInt64();
 
-                var styledText = GetStyledText(scintilla, lineStartBytePos, (lineStartBytePos + lineLength), false);
+                ArraySegment<byte> styledText = GetStyledText(scintilla, lineStartBytePos, (lineStartBytePos + lineLength), false);
                 segments.Add(styledText);
             }
             else // User-specified range
             {
                 Debug.Assert(startBytePos != endBytePos);
-                var styledText = GetStyledText(scintilla, startBytePos, endBytePos, false);
+                ArraySegment<byte> styledText = GetStyledText(scintilla, startBytePos, endBytePos, false);
                 segments.Add(styledText);
             }
 
@@ -1111,11 +1125,11 @@ namespace ScintillaNET
             styles[Style.Default].Case = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETCASE, new IntPtr(Style.Default), IntPtr.Zero).ToInt32();
             styles[Style.Default].Visible = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETVISIBLE, new IntPtr(Style.Default), IntPtr.Zero).ToInt32();
 
-            foreach (var seg in segments)
+            foreach (ArraySegment<byte> seg in segments)
             {
                 for (int i = 0; i < seg.Count; i += 2)
                 {
-                    var style = seg.Array[i + 1];
+                    byte style = seg.Array[i + 1];
                     if (!styles[style].Used)
                     {
                         styles[style].Used = true;
@@ -1142,15 +1156,15 @@ namespace ScintillaNET
             // Make sure the range is styled
             scintilla.DirectMessage(NativeMethods.SCI_COLOURISE, new IntPtr(startBytePos), new IntPtr(endBytePos));
 
-            var rangeLength = (endBytePos - startBytePos);
+            long rangeLength = (endBytePos - startBytePos);
             // 2 bytes per source byte (interleaved char + style) plus the optional line
             // break (4) and NUL terminator (2). Compute in 64-bit and reject a range too
             // large for an int-sized buffer rather than overflowing to a negative length.
-            var bufferLength = (rangeLength * 2) + (addLineBreak ? 4 : 0) + 2;
+            long bufferLength = (rangeLength * 2) + (addLineBreak ? 4 : 0) + 2;
             if (bufferLength > int.MaxValue)
                 throw new ArgumentException("The styled range is too large to serialize.");
-            var byteLength = (int)rangeLength;
-            var buffer = new byte[(int)bufferLength];
+            int byteLength = (int)rangeLength;
+            byte[] buffer = new byte[(int)bufferLength];
             fixed (byte* bp = buffer)
             {
                 NativeMethods.Sci_TextRangeFull* tr = stackalloc NativeMethods.Sci_TextRangeFull[1];
@@ -1169,7 +1183,7 @@ namespace ScintillaNET
                 // An empty rectangular-selection row has no preceding style cell
                 // (Release strips the assert above), so fall back to style 0 rather
                 // than indexing buffer[-1].
-                var style = byteLength > 0 ? buffer[byteLength - 1] : (byte)0;
+                byte style = byteLength > 0 ? buffer[byteLength - 1] : (byte)0;
 
                 buffer[byteLength++] = (byte)'\r';
                 buffer[byteLength++] = style;
@@ -1272,7 +1286,7 @@ namespace ScintillaNET
             }
 
             // No translation necessary for the modifiers. Just add them back in.
-            var keyDefinition = keyCode | (int)(keys & Keys.Modifiers);
+            int keyDefinition = keyCode | (int)(keys & Keys.Modifiers);
             return keyDefinition;
         }
 

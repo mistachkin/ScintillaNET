@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -18,10 +17,10 @@ namespace ScintillaNET
             if (data != null)
             {
                 length = Helpers.Clamp(length, 0, data.Length);
-                var bytes = Helpers.GetBytes(data, length, encoding, false);
+                byte[] bytes = Helpers.GetBytes(data, length, encoding, false);
                 fixed (byte* bp = bytes)
                 {
-                    var status = (IntPtr.Size == 4 ? loader32.AddData(self, bp, new IntPtr(bytes.Length)) : loader64.AddData(self, bp, new IntPtr(bytes.Length)));
+                    int status = (IntPtr.Size == 4 ? loader32.AddData(self, bp, new IntPtr(bytes.Length)) : loader64.AddData(self, bp, new IntPtr(bytes.Length)));
                     if (status != NativeMethods.SC_STATUS_OK)
                         return false;
                 }
@@ -32,14 +31,14 @@ namespace ScintillaNET
 
         public Document ConvertToDocument()
         {
-            var ptr = (IntPtr.Size == 4 ? loader32.ConvertToDocument(self) : loader64.ConvertToDocument(self));
-            var document = new Document { Value = ptr };
+            IntPtr ptr = (IntPtr.Size == 4 ? loader32.ConvertToDocument(self) : loader64.ConvertToDocument(self));
+            Document document = new Document(ptr);
             return document;
         }
 
         public int Release()
         {
-            var count = (IntPtr.Size == 4 ? loader32.Release(self) : loader64.Release(self));
+            int count = (IntPtr.Size == 4 ? loader32.Release(self) : loader64.Release(self));
             return count;
         }
 

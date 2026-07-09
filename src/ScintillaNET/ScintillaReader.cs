@@ -86,7 +86,7 @@ namespace ScintillaNET {
         public override int Read() {
             if (_data != null) {
                 // EOF not reached
-                var n = _data[_dataIndex++];
+                char n = _data[_dataIndex++];
                 if (_dataIndex >= _data.Length) {
                     // end of buffer reached; load next section
                     BufferNextRegion();
@@ -122,7 +122,7 @@ namespace ScintillaNET {
         /// <exception cref="System.ArgumentOutOfRangeException">index or count is negative.</exception>
         public override int ReadBlock(char[] buffer, int index, int count) {
             if (_data != null) {
-                var bufferRemaining = BufferRemaining;
+                int bufferRemaining = BufferRemaining;
                 if (count < bufferRemaining) {
                     // buffer larger than read size
                     _data.CopyTo(_dataIndex, buffer, index, count);
@@ -133,14 +133,14 @@ namespace ScintillaNET {
                     _data.CopyTo(_dataIndex, buffer, index, bufferRemaining);
                     if (count > bufferRemaining) {
                         // buffer is smaller; read rest
-                        var toRead = (int)Math.Min(count - bufferRemaining, UnbufferedRemaining);
-                        var rest = _scintilla.GetTextRange(_nextData, toRead);
+                        int toRead = (int)Math.Min(count - bufferRemaining, UnbufferedRemaining);
+                        string rest = _scintilla.GetTextRange(_nextData, toRead);
                         // GetTextRange rounds a boundary that bisects a surrogate pair
                         // up to the whole code point, so it can return one extra unit.
                         // Never copy or report more than requested (which would overrun
                         // the caller's buffer) or split a surrogate: drop a trailing
                         // partial astral char here and re-read it whole next time.
-                        var restLen = rest.Length > toRead ? toRead - 1 : rest.Length;
+                        int restLen = rest.Length > toRead ? toRead - 1 : rest.Length;
                         rest.CopyTo(0, buffer, index + bufferRemaining, restLen);
                         count = bufferRemaining + restLen;
                         _nextData += restLen;
@@ -159,7 +159,7 @@ namespace ScintillaNET {
         /// </summary>
         private void BufferNextRegion() {
             if (_nextData < _lastData) {
-                var size = (int)Math.Min(_lastData - _nextData, _bufferSize);
+                int size = (int)Math.Min(_lastData - _nextData, _bufferSize);
                 _data = _scintilla.GetTextRange(_nextData, size);
                 _nextData += _data.Length;
                 _dataIndex = 0;

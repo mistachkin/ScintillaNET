@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace ScintillaNET
@@ -26,8 +25,8 @@ namespace ScintillaNET
             {
                 if (length == null)
                 {
-                    var endBytePosition = (bytePosition + byteLength);
-                    var endPosition = scintilla.Lines.ByteToCharPosition(endBytePosition);
+                    long endBytePosition = (bytePosition + byteLength);
+                    long endPosition = scintilla.Lines.ByteToCharPosition(endBytePosition);
                     length = (endPosition - Position);
                 }
 

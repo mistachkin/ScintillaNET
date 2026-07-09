@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Text;
 
 namespace ScintillaNET
@@ -33,7 +32,7 @@ namespace ScintillaNET
 
     public override int GetHashCode()
     {
-      var hc = 0;
+            int hc = 0;
       if (!object.ReferenceEquals(Item1, null))
         hc = Item1Comparer.GetHashCode(Item1);
       if (!object.ReferenceEquals(Item2, null))
@@ -42,7 +41,7 @@ namespace ScintillaNET
     }
     public override bool Equals(object obj)
     {
-      var other = obj as Tuple<T1, T2>;
+            Tuple<T1, T2> other = obj as Tuple<T1, T2>;
       if (object.ReferenceEquals(other, null))
         return false;
       else

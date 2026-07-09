@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace ScintillaNET
@@ -38,7 +37,7 @@ namespace ScintillaNET
             stepLength += delta;
 
             // Invalidate multibyte flag
-            var perLine = perLineData[(int)index];
+            PerLine perLine = perLineData[(int)index];
             perLine.ContainsMultibyte = ContainsMultibyte.Unkown;
             perLineData[(int)index] = perLine;
         }
@@ -51,9 +50,9 @@ namespace ScintillaNET
             Debug.Assert(pos >= 0);
             Debug.Assert(pos <= scintilla.DirectMessage(NativeMethods.SCI_GETLENGTH).ToInt64());
 
-            var line = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, new IntPtr(pos)).ToInt64();
-            var byteStart = scintilla.DirectMessage(NativeMethods.SCI_POSITIONFROMLINE, new IntPtr(line)).ToInt64();
-            var count = CharPositionFromLine(line) + GetCharCount(byteStart, pos - byteStart);
+            long line = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, new IntPtr(pos)).ToInt64();
+            long byteStart = scintilla.DirectMessage(NativeMethods.SCI_POSITIONFROMLINE, new IntPtr(line)).ToInt64();
+            long count = CharPositionFromLine(line) + GetCharCount(byteStart, pos - byteStart);
 
             return count;
         }
@@ -86,7 +85,7 @@ namespace ScintillaNET
             Debug.Assert(index >= 0);
             Debug.Assert(index < perLineData.Count); // Allow query of terminal line start
 
-            var start = perLineData[(int)index].Start;
+            long start = perLineData[(int)index].Start;
             if (index > stepLine)
                 start += stepLength;
 
@@ -99,8 +98,8 @@ namespace ScintillaNET
             Debug.Assert(pos <= TextLength);
 
             // Adjust to the nearest line start
-            var line = LineFromCharPosition(pos);
-            var lineByteStart = scintilla.DirectMessage(NativeMethods.SCI_POSITIONFROMLINE, new IntPtr(line)).ToInt64();
+            long line = LineFromCharPosition(pos);
+            long lineByteStart = scintilla.DirectMessage(NativeMethods.SCI_POSITIONFROMLINE, new IntPtr(line)).ToInt64();
             pos -= CharPositionFromLine(line);
 
             if (pos <= 0)
@@ -116,14 +115,14 @@ namespace ScintillaNET
             // so the map stays self-consistent even for malformed UTF-8 -- where native
             // SCI_POSITIONRELATIVE classifies invalid bytes differently than the .NET
             // decoder that produces the char counts (and the "Text" a caller sees).
-            var lineByteLength = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(line)).ToInt64();
-            var ptr = scintilla.DirectMessage(NativeMethods.SCI_GETRANGEPOINTER, new IntPtr(lineByteStart), new IntPtr(lineByteLength));
+            long lineByteLength = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(line)).ToInt64();
+            IntPtr ptr = scintilla.DirectMessage(NativeMethods.SCI_GETRANGEPOINTER, new IntPtr(lineByteStart), new IntPtr(lineByteLength));
 
-            var lo = 0;
-            var hi = (int)lineByteLength;
+            int lo = 0;
+            int hi = (int)lineByteLength;
             while (lo < hi)
             {
-                var mid = lo + ((hi - lo) / 2);
+                int mid = lo + ((hi - lo) / 2);
                 if (GetCharCount(ptr, mid, scintilla.Encoding) < pos)
                     lo = mid + 1;
                 else
@@ -162,7 +161,7 @@ namespace ScintillaNET
         /// <returns>A string representing the line buffer.</returns>
         public string Dump()
         {
-            using (var writer = new StringWriter())
+            using (StringWriter writer = new StringWriter())
             {
                 scintilla.Lines.Dump(writer);
                 return writer.ToString();
@@ -175,25 +174,25 @@ namespace ScintillaNET
         /// <param name="writer">The writer to use for dumping the line buffer.</param>
         public unsafe void Dump(TextWriter writer)
         {
-            var totalChars = 0;
+            int totalChars = 0;
 
             for (int i = 0; i < perLineData.Count; i++)
             {
-                var error = totalChars == CharPositionFromLine(i) ? null : "*";
+                string error = totalChars == CharPositionFromLine(i) ? null : "*";
                 if (i == perLineData.Count - 1)
                 {
                     writer.WriteLine("{0}[{1}] {2} (terminal)", error, i, CharPositionFromLine(i));
                 }
                 else
                 {
-                    var len = scintilla.DirectMessage(NativeMethods.SCI_GETLINE, new IntPtr(i)).ToInt32();
-                    var bytes = new byte[len];
+                    int len = scintilla.DirectMessage(NativeMethods.SCI_GETLINE, new IntPtr(i)).ToInt32();
+                    byte[] bytes = new byte[len];
 
                     fixed (byte* ptr = bytes)
                         scintilla.DirectMessage(NativeMethods.SCI_GETLINE, new IntPtr(i), new IntPtr(ptr));
 
-                    var str = scintilla.Encoding.GetString(bytes);
-                    var containsMultibyte = "U";
+                    string str = scintilla.Encoding.GetString(bytes);
+                    string containsMultibyte = "U";
                     if (perLineData[i].ContainsMultibyte == ContainsMultibyte.Yes)
                         containsMultibyte = "Y";
                     else if (perLineData[i].ContainsMultibyte == ContainsMultibyte.No)
@@ -212,7 +211,7 @@ namespace ScintillaNET
         /// </summary>
         private int GetCharCount(long pos, long length)
         {
-            var ptr = scintilla.DirectMessage(NativeMethods.SCI_GETRANGEPOINTER, new IntPtr(pos), new IntPtr(length));
+            IntPtr ptr = scintilla.DirectMessage(NativeMethods.SCI_GETRANGEPOINTER, new IntPtr(pos), new IntPtr(length));
             return GetCharCount(ptr, (int)length, scintilla.Encoding);
         }
 
@@ -225,7 +224,7 @@ namespace ScintillaNET
                 return 0;
 
             // Never use SCI_COUNTCHARACTERS. It counts CRLF as 1 char!
-            var count = encoding.GetCharCount((byte*)text, length);
+            int count = encoding.GetCharCount((byte*)text, length);
             return count;
         }
 
@@ -249,7 +248,7 @@ namespace ScintillaNET
 
         private bool LineContainsMultibyteChar(long index)
         {
-            var perLine = perLineData[(int)index];
+            PerLine perLine = perLineData[(int)index];
             if (perLine.ContainsMultibyte == ContainsMultibyte.Unkown)
             {
                 perLine.ContainsMultibyte =
@@ -274,13 +273,13 @@ namespace ScintillaNET
             // http://en.wikipedia.org/wiki/Binary_search_algorithm
             // System.Collections.Generic.ArraySortHelper.InternalBinarySearch
 
-            var low = 0L;
-            var high = Count - 1;
+            long low = 0L;
+            long high = Count - 1;
 
             while (low <= high)
             {
-                var mid = low + ((high - low) / 2);
-                var start = CharPositionFromLine(mid);
+                long mid = low + ((high - low) / 2);
+                long start = CharPositionFromLine(mid);
 
                 if (pos == start)
                     return mid;
@@ -313,7 +312,7 @@ namespace ScintillaNET
             perLineData[(int)index] = data;
 
             // Insert the new line
-            data = new PerLine { Start = lineStart };
+            data = new PerLine(lineStart);
             perLineData.Insert((int)index, data);
 
             // Move the step
@@ -357,12 +356,12 @@ namespace ScintillaNET
             stepLength = 0;
 
             perLineData = new GapBuffer<PerLine>();
-            perLineData.Add(new PerLine { Start = 0 });
-            perLineData.Add(new PerLine { Start = 0 }); // Terminal
+            perLineData.Add(new PerLine(0));
+            perLineData.Add(new PerLine(0)); // Terminal
 
             // Fake an insert notification
-            var scn = new NativeMethods.SCNotification();
-            var adjustedLines = scintilla.DirectMessage(NativeMethods.SCI_GETLINECOUNT).ToInt64() - 1;
+            NativeMethods.SCNotification scn = new NativeMethods.SCNotification();
+            long adjustedLines = scintilla.DirectMessage(NativeMethods.SCI_GETLINECOUNT).ToInt64() - 1;
             scn.linesAdded = new IntPtr(adjustedLines);
             scn.position = IntPtr.Zero;
             scn.length = scintilla.DirectMessage(NativeMethods.SCI_GETLENGTH);
@@ -372,7 +371,7 @@ namespace ScintillaNET
 
         private void scintilla_SCNotification(object sender, SCNotificationEventArgs e)
         {
-            var scn = e.SCNotification;
+            NativeMethods.SCNotification scn = e.SCNotification;
             switch (scn.nmhdr.code)
             {
                 case NativeMethods.SCN_MODIFIED:
@@ -407,24 +406,24 @@ namespace ScintillaNET
 
         private void TrackDeleteText(NativeMethods.SCNotification scn)
         {
-            var startLine = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, scn.position).ToInt64();
+            long startLine = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, scn.position).ToInt64();
             if (scn.linesAdded == IntPtr.Zero)
             {
                 // That was easy
-                var delta = GetCharCount(scn.text, scn.length.ToInt32(), scintilla.Encoding);
+                int delta = GetCharCount(scn.text, scn.length.ToInt32(), scintilla.Encoding);
                 AdjustLineLength(startLine, delta * -1);
             }
             else
             {
                 // Adjust the existing line
-                var lineByteStart = scintilla.DirectMessage(NativeMethods.SCI_POSITIONFROMLINE, new IntPtr(startLine)).ToInt64();
-                var lineByteLength = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(startLine)).ToInt64();
+                long lineByteStart = scintilla.DirectMessage(NativeMethods.SCI_POSITIONFROMLINE, new IntPtr(startLine)).ToInt64();
+                long lineByteLength = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(startLine)).ToInt64();
                 AdjustLineLength(startLine, GetCharCount(lineByteStart, lineByteLength) - CharLineLength(startLine));
 
                 // Bound the removal to the lines the mirror actually has after
                 // startLine, so a line delta larger than the tracked count cannot
                 // walk DeletePerLine off the end of perLineData.
-                var linesRemoved = Math.Min(scn.linesAdded.ToInt64() * -1, (Count - 1) - startLine);
+                long linesRemoved = Math.Min(scn.linesAdded.ToInt64() * -1, (Count - 1) - startLine);
                 for (long i = 0; i < linesRemoved; i++)
                 {
                     // Deleted line
@@ -435,11 +434,11 @@ namespace ScintillaNET
 
         private void TrackInsertText(NativeMethods.SCNotification scn)
         {
-            var startLine = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, scn.position).ToInt64();
+            long startLine = scintilla.DirectMessage(NativeMethods.SCI_LINEFROMPOSITION, scn.position).ToInt64();
             if (scn.linesAdded == IntPtr.Zero)
             {
                 // That was easy
-                var delta = GetCharCount(scn.position.ToInt64(), scn.length.ToInt64());
+                int delta = GetCharCount(scn.position.ToInt64(), scn.length.ToInt64());
                 AdjustLineLength(startLine, delta);
             }
             else
@@ -452,10 +451,10 @@ namespace ScintillaNET
                 lineByteLength = scintilla.DirectMessage(NativeMethods.SCI_LINELENGTH, new IntPtr(startLine)).ToInt64();
                 AdjustLineLength(startLine, GetCharCount(lineByteStart, lineByteLength) - CharLineLength(startLine));
 
-                var linesAdded = scn.linesAdded.ToInt64();
+                long linesAdded = scn.linesAdded.ToInt64();
                 for (long i = 1; i <= linesAdded; i++)
                 {
-                    var line = startLine + i;
+                    long line = startLine + i;
 
                     // Insert new line
                     lineByteStart += lineByteLength;
@@ -534,8 +533,8 @@ namespace ScintillaNET
             this.scintilla.SCNotification += scintilla_SCNotification;
 
             this.perLineData = new GapBuffer<PerLine>();
-            this.perLineData.Add(new PerLine { Start = 0 });
-            this.perLineData.Add(new PerLine { Start = 0 }); // Terminal
+            this.perLineData.Add(new PerLine(0));
+            this.perLineData.Add(new PerLine(0)); // Terminal
         }
 
         #endregion Constructors
@@ -557,6 +556,12 @@ namespace ScintillaNET
             /// </summary>
             /// <remarks>Using an enum instead of Nullable because it uses less memory per line...</remarks>
             public ContainsMultibyte ContainsMultibyte;
+
+            public PerLine(long start)
+            {
+                this.Start = start;
+                this.ContainsMultibyte = ContainsMultibyte.Unkown;
+            }
         }
 
         private enum ContainsMultibyte

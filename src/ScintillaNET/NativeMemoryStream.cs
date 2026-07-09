@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -72,12 +71,12 @@ namespace ScintillaNET
                 // Grow with 64-bit intermediates so the capacity math cannot overflow
                 // to a negative size (which AllocHGlobal would treat as a huge SIZE_T,
                 // i.e. either OOM or an under-sized buffer followed by an OOB write).
-                var minCapacity = (int)Math.Min(position + count, int.MaxValue);
-                var newCapacity = (int)Math.Min(capacity * 2, int.MaxValue);
+                int minCapacity = (int)Math.Min(position + count, int.MaxValue);
+                int newCapacity = (int)Math.Min(capacity * 2, int.MaxValue);
                 if (newCapacity < minCapacity)
                     newCapacity = minCapacity;
 
-                var newPtr = Marshal.AllocHGlobal(newCapacity);
+                IntPtr newPtr = Marshal.AllocHGlobal(newCapacity);
                 NativeMethods.MoveMemory(newPtr, ptr, new UIntPtr((ulong)length));
                 Marshal.FreeHGlobal(ptr);
 
@@ -115,7 +114,13 @@ namespace ScintillaNET
             }
         }
 
-        public bool FreeOnDispose { get; set; }
+        private bool freeOnDispose;
+
+        public bool FreeOnDispose
+        {
+            get { return this.freeOnDispose; }
+            set { this.freeOnDispose = value; }
+        }
 
         public override long Length
         {

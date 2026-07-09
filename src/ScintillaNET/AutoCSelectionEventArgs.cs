@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace ScintillaNET
@@ -55,7 +54,7 @@ namespace ScintillaNET
             {
                 if (text == null)
                 {
-                    var len = 0;
+                    int len = 0;
                     while (((byte*)textPtr)[len] != 0)
                         len++;
 

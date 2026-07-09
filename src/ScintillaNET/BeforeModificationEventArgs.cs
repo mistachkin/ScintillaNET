@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace ScintillaNET
@@ -15,8 +14,20 @@ namespace ScintillaNET
         private readonly int byteLength;
         private readonly IntPtr textPtr;
 
-        internal long? CachedPosition { get; set; }
-        internal string CachedText { get; set; }
+        private long? cachedPosition;
+        private string cachedText;
+
+        internal long? CachedPosition
+        {
+            get { return this.cachedPosition; }
+            set { this.cachedPosition = value; }
+        }
+
+        internal string CachedText
+        {
+            get { return this.cachedText; }
+            set { this.cachedText = value; }
+        }
 
         /// <summary>
         /// Gets the zero-based document position where the modification will occur.
@@ -61,7 +72,7 @@ namespace ScintillaNET
                     // SC_MOD_BEFOREDELETE... but we can get it from the document.
                     if (textPtr == IntPtr.Zero)
                     {
-                        var ptr = scintilla.DirectMessage(NativeMethods.SCI_GETRANGEPOINTER, new IntPtr(bytePosition), new IntPtr(byteLength));
+                        IntPtr ptr = scintilla.DirectMessage(NativeMethods.SCI_GETRANGEPOINTER, new IntPtr(bytePosition), new IntPtr(byteLength));
                         CachedText = new string((sbyte*)ptr, 0, byteLength, scintilla.Encoding);
                     }
                     else

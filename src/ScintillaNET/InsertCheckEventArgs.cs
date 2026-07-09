@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace ScintillaNET
@@ -15,8 +14,20 @@ namespace ScintillaNET
         private readonly int byteLength;
         private readonly IntPtr textPtr;
 
-        internal long? CachedPosition { get; set; }
-        internal string CachedText { get; set; }
+        private long? cachedPosition;
+        private string cachedText;
+
+        internal long? CachedPosition
+        {
+            get { return this.cachedPosition; }
+            set { this.cachedPosition = value; }
+        }
+
+        internal string CachedText
+        {
+            get { return this.cachedText; }
+            set { this.cachedText = value; }
+        }
 
         /// <summary>
         /// Gets the zero-based document position where text will be inserted.
@@ -50,7 +61,7 @@ namespace ScintillaNET
             {
                 CachedText = value ?? string.Empty;
 
-                var bytes = Helpers.GetBytes(CachedText, scintilla.Encoding, false);
+                byte[] bytes = Helpers.GetBytes(CachedText, scintilla.Encoding, false);
                 fixed (byte* bp = bytes)
                     scintilla.DirectMessage(NativeMethods.SCI_CHANGEINSERTION, new IntPtr(bytes.Length), new IntPtr(bp));
             }
