@@ -1,3 +1,16 @@
+/*
+ * Style.cs --
+ *
+ * Copyright (c) 2017 Jacob Slusser, https://github.com/jacobslusser
+ * Copyright (c) 2019-2026 by Joe Mistachkin.  All rights reserved.
+ *
+ * This file is part of ScintillaNET, which is distributed under the MIT
+ * License; see the file "LICENSE" for full terms and a DISCLAIMER OF ALL
+ * WARRANTIES.
+ *
+ * RCS: @(#) $Id: $
+ */
+
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -8,64 +21,86 @@ namespace ScintillaNET
     /// <summary>
     /// A style definition in a <see cref="Scintilla" /> control.
     /// </summary>
+    [ObjectId("bc5be18b-3647-485f-9c8b-91f0ff7e9224")]
     public class Style
     {
         #region Constants
-
         /// <summary>
-        /// Default style index. This style is used to define properties that all styles receive when calling <see cref="Scintilla.StyleClearAll" />.
+        /// Default style index. This style is used to define properties that
+        /// all styles receive when calling
+        /// <see cref="Scintilla.StyleClearAll" />.
         /// </summary>
         public const int Default = NativeMethods.STYLE_DEFAULT;
 
         /// <summary>
-        /// Line number style index. This style is used for text in line number margins. The background color of this style also
-        /// sets the background color for all margins that do not have any folding mask set.
+        /// Line number style index. This style is used for text in line
+        /// number margins. The background color of this style also sets the
+        /// background color for all margins that do not have any folding
+        /// mask set.
         /// </summary>
         public const int LineNumber = NativeMethods.STYLE_LINENUMBER;
 
         /// <summary>
-        /// Call tip style index. Only font name, size, foreground color, background color, and character set attributes
-        /// can be used when displaying a call tip.
+        /// Call tip style index. Only font name, size, foreground color,
+        /// background color, and character set attributes can be used when
+        /// displaying a call tip.
         /// </summary>
         public const int CallTip = NativeMethods.STYLE_CALLTIP;
 
         /// <summary>
-        /// Indent guide style index. This style is used to specify the foreground and background colors of <see cref="Scintilla.IndentationGuides" />.
+        /// Indent guide style index. This style is used to specify the
+        /// foreground and background colors of
+        /// <see cref="Scintilla.IndentationGuides" />.
         /// </summary>
         public const int IndentGuide = NativeMethods.STYLE_INDENTGUIDE;
 
         /// <summary>
-        /// Brace highlighting style index. This style is used on a brace character when set with the <see cref="Scintilla.BraceHighlight" /> method
-        /// or the indentation guide when used with the <see cref="Scintilla.HighlightGuide" /> property.
+        /// Brace highlighting style index. This style is used on a brace
+        /// character when set with the
+        /// <see cref="Scintilla.BraceHighlight" /> method or the
+        /// indentation guide when used with the
+        /// <see cref="Scintilla.HighlightGuide" /> property.
         /// </summary>
         public const int BraceLight = NativeMethods.STYLE_BRACELIGHT;
 
         /// <summary>
-        /// Bad brace style index. This style is used on an unmatched brace character when set with the <see cref="Scintilla.BraceBadLight" /> method.
+        /// Bad brace style index. This style is used on an unmatched brace
+        /// character when set with the
+        /// <see cref="Scintilla.BraceBadLight" /> method.
         /// </summary>
         public const int BraceBad = NativeMethods.STYLE_BRACEBAD;
 
         /// <summary>
-        /// Fold text tag style index. This is the style used for drawing text tags attached to folded text when
-        /// <see cref="Scintilla.FoldDisplayTextSetStyle" /> and <see cref="Line.ToggleFoldShowText" /> are used.
+        /// Fold text tag style index. This is the style used for drawing
+        /// text tags attached to folded text when
+        /// <see cref="Scintilla.FoldDisplayTextSetStyle" /> and
+        /// <see cref="Line.ToggleFoldShowText" /> are used.
         /// </summary>
         public const int FoldDisplayText = NativeMethods.STYLE_FOLDDISPLAYTEXT;
-
         #endregion Constants
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Fields
-
+        /// <summary>
+        /// The <see cref="Scintilla" /> control that created this style.
+        /// </summary>
         private readonly Scintilla scintilla;
-
         #endregion Fields
 
-        #region Methods
+        ///////////////////////////////////////////////////////////////////////
 
+        #region Methods
         /// <summary>
         /// Copies the current style to another style.
         /// </summary>
-        /// <param name="destination">The <see cref="Style" /> to which the current style should be copied.</param>
-        public void CopyTo(Style destination)
+        /// <param name="destination">
+        /// The <see cref="Style" /> to which the current style should be
+        /// copied.
+        /// </param>
+        public void CopyTo(
+            Style destination /* in */
+            )
         {
             if (destination == null)
                 return;
@@ -84,21 +119,24 @@ namespace ScintillaNET
             destination.Visible = Visible;
             destination.Weight = Weight;
         }
-
         #endregion Methods
 
-        #region Properties
+        ///////////////////////////////////////////////////////////////////////
 
+        #region Properties
         /// <summary>
         /// Gets or sets the background color of the style.
         /// </summary>
-        /// <returns>A Color object representing the style background color. The default is White.</returns>
-        /// <remarks>Alpha color values are ignored.</remarks>
+        /// <remarks>
+        /// Alpha color values are ignored.
+        /// </remarks>
         public Color BackColor
         {
             get
             {
-                int color = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETBACK, new IntPtr(Index), IntPtr.Zero).ToInt32();
+                int color = scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLEGETBACK, new IntPtr(Index),
+                    IntPtr.Zero).ToInt32();
                 return ColorTranslator.FromWin32(color);
             }
             set
@@ -107,83 +145,113 @@ namespace ScintillaNET
                     value = Color.White;
 
                 int color = ColorTranslator.ToWin32(value);
-                scintilla.DirectMessage(NativeMethods.SCI_STYLESETBACK, new IntPtr(Index), new IntPtr(color));
+                scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLESETBACK, new IntPtr(Index),
+                    new IntPtr(color));
             }
         }
+
+        ///////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// Gets or sets whether the style font is bold.
         /// </summary>
-        /// <returns>true if bold; otherwise, false. The default is false.</returns>
-        /// <remarks>Setting this property affects the <see cref="Weight" /> property.</remarks>
+        /// <remarks>
+        /// Setting this property affects the <see cref="Weight" /> property.
+        /// </remarks>
         public bool Bold
         {
             get
             {
-                return scintilla.DirectMessage(NativeMethods.SCI_STYLEGETBOLD, new IntPtr(Index), IntPtr.Zero) != IntPtr.Zero;
+                return scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLEGETBOLD, new IntPtr(Index),
+                    IntPtr.Zero) != IntPtr.Zero;
             }
             set
             {
                 IntPtr bold = (value ? new IntPtr(1) : IntPtr.Zero);
-                scintilla.DirectMessage(NativeMethods.SCI_STYLESETBOLD, new IntPtr(Index), bold);
+                scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLESETBOLD, new IntPtr(Index), bold);
             }
         }
+
+        ///////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// Gets or sets the casing used to display the styled text.
         /// </summary>
-        /// <returns>One of the <see cref="StyleCase" /> enum values. The default is <see cref="StyleCase.Mixed" />.</returns>
-        /// <remarks>This does not affect how text is stored, only displayed.</remarks>
+        /// <remarks>
+        /// This does not affect how text is stored, only displayed.
+        /// </remarks>
         public StyleCase Case
         {
             get
             {
-                int @case = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETCASE, new IntPtr(Index), IntPtr.Zero).ToInt32();
+                int @case = scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLEGETCASE, new IntPtr(Index),
+                    IntPtr.Zero).ToInt32();
                 return (StyleCase)@case;
             }
             set
             {
                 // Just an excuse to use @... syntax
                 int @case = (int)value;
-                scintilla.DirectMessage(NativeMethods.SCI_STYLESETCASE, new IntPtr(Index), new IntPtr(@case));
+                scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLESETCASE, new IntPtr(Index),
+                    new IntPtr(@case));
             }
         }
 
+        ///////////////////////////////////////////////////////////////////////
+
         /// <summary>
-        /// Gets or sets whether the remainder of the line is filled with the <see cref="BackColor" />
-        /// when this style is used on the last character of a line.
+        /// Gets or sets whether the remainder of the line is filled with the
+        /// <see cref="BackColor" /> when this style is used on the last
+        /// character of a line.
         /// </summary>
-        /// <returns>true to fill the line; otherwise, false. The default is false.</returns>
         public bool FillLine
         {
             get
             {
-                return scintilla.DirectMessage(NativeMethods.SCI_STYLEGETEOLFILLED, new IntPtr(Index), IntPtr.Zero) != IntPtr.Zero;
+                return scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLEGETEOLFILLED, new IntPtr(Index),
+                    IntPtr.Zero) != IntPtr.Zero;
             }
             set
             {
                 IntPtr fillLine = (value ? new IntPtr(1) : IntPtr.Zero);
-                scintilla.DirectMessage(NativeMethods.SCI_STYLESETEOLFILLED, new IntPtr(Index), fillLine);
+                scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLESETEOLFILLED, new IntPtr(Index),
+                    fillLine);
             }
         }
+
+        ///////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// Gets or sets the style font name.
         /// </summary>
-        /// <returns>The style font name. The default is Verdana.</returns>
-        /// <remarks>Scintilla caches fonts by name so font names and casing should be consistent.</remarks>
+        /// <remarks>
+        /// Scintilla caches fonts by name so font names and casing should be
+        /// consistent.
+        /// </remarks>
         public string Font
         {
             get
             {
-                int length = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETFONT, new IntPtr(Index), IntPtr.Zero).ToInt32();
-                // SCI_STYLEGETFONT returns the name length but writes length+1 bytes
-                // (name plus a NUL terminator), so the buffer needs the extra byte.
+                int length = scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLEGETFONT, new IntPtr(Index),
+                    IntPtr.Zero).ToInt32();
+                // SCI_STYLEGETFONT returns the name length but writes
+                // length+1 bytes (name plus a NUL terminator), so the
+                // buffer needs the extra byte.
                 byte[] font = new byte[length + 1];
                 unsafe
                 {
                     fixed (byte* bp = font)
-                        scintilla.DirectMessage(NativeMethods.SCI_STYLEGETFONT, new IntPtr(Index), new IntPtr(bp));
+                        scintilla.DirectMessage(
+                            NativeMethods.SCI_STYLEGETFONT, new IntPtr(Index),
+                            new IntPtr(bp));
                 }
 
                 string name = Encoding.UTF8.GetString(font, 0, length);
@@ -199,21 +267,28 @@ namespace ScintillaNET
                 unsafe
                 {
                     fixed (byte* bp = font)
-                        scintilla.DirectMessage(NativeMethods.SCI_STYLESETFONT, new IntPtr(Index), new IntPtr(bp));
+                        scintilla.DirectMessage(
+                            NativeMethods.SCI_STYLESETFONT, new IntPtr(Index),
+                            new IntPtr(bp));
                 }
             }
         }
 
+        ///////////////////////////////////////////////////////////////////////
+
         /// <summary>
         /// Gets or sets the foreground color of the style.
         /// </summary>
-        /// <returns>A Color object representing the style foreground color. The default is Black.</returns>
-        /// <remarks>Alpha color values are ignored.</remarks>
+        /// <remarks>
+        /// Alpha color values are ignored.
+        /// </remarks>
         public Color ForeColor
         {
             get
             {
-                int color = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETFORE, new IntPtr(Index), IntPtr.Zero).ToInt32();
+                int color = scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLEGETFORE, new IntPtr(Index),
+                    IntPtr.Zero).ToInt32();
                 return ColorTranslator.FromWin32(color);
             }
             set
@@ -222,150 +297,199 @@ namespace ScintillaNET
                     value = Color.Black;
 
                 int color = ColorTranslator.ToWin32(value);
-                scintilla.DirectMessage(NativeMethods.SCI_STYLESETFORE, new IntPtr(Index), new IntPtr(color));
+                scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLESETFORE, new IntPtr(Index),
+                    new IntPtr(color));
             }
         }
 
+        ///////////////////////////////////////////////////////////////////////
+
         /// <summary>
-        /// Gets or sets whether hovering the mouse over the style text exhibits hyperlink behavior.
+        /// Gets or sets whether hovering the mouse over the style text
+        /// exhibits hyperlink behavior.
         /// </summary>
-        /// <returns>true to use hyperlink behavior; otherwise, false. The default is false.</returns>
         public bool Hotspot
         {
             get
             {
-                return scintilla.DirectMessage(NativeMethods.SCI_STYLEGETHOTSPOT, new IntPtr(Index), IntPtr.Zero) != IntPtr.Zero;
+                return scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLEGETHOTSPOT, new IntPtr(Index),
+                    IntPtr.Zero) != IntPtr.Zero;
             }
             set
             {
                 IntPtr hotspot = (value ? new IntPtr(1) : IntPtr.Zero);
-                scintilla.DirectMessage(NativeMethods.SCI_STYLESETHOTSPOT, new IntPtr(Index), hotspot);
+                scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLESETHOTSPOT, new IntPtr(Index),
+                    hotspot);
             }
         }
+
+        ///////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// Gets the zero-based style definition index.
         /// </summary>
-        /// <returns>The style definition index within the <see cref="StyleCollection" />.</returns>
         public int Index { get; private set; }
+
+        ///////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// Gets or sets whether the style font is italic.
         /// </summary>
-        /// <returns>true if italic; otherwise, false. The default is false.</returns>
         public bool Italic
         {
             get
             {
-                return scintilla.DirectMessage(NativeMethods.SCI_STYLEGETITALIC, new IntPtr(Index), IntPtr.Zero) != IntPtr.Zero;
+                return scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLEGETITALIC, new IntPtr(Index),
+                    IntPtr.Zero) != IntPtr.Zero;
             }
             set
             {
                 IntPtr italic = (value ? new IntPtr(1) : IntPtr.Zero);
-                scintilla.DirectMessage(NativeMethods.SCI_STYLESETITALIC, new IntPtr(Index), italic);
+                scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLESETITALIC, new IntPtr(Index),
+                    italic);
             }
         }
+
+        ///////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// Gets or sets the size of the style font in points.
         /// </summary>
-        /// <returns>The size of the style font as a whole number of points. The default is 8.</returns>
         public int Size
         {
             get
             {
-                return scintilla.DirectMessage(NativeMethods.SCI_STYLEGETSIZE, new IntPtr(Index), IntPtr.Zero).ToInt32();
+                return scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLEGETSIZE, new IntPtr(Index),
+                    IntPtr.Zero).ToInt32();
             }
             set
             {
-                scintilla.DirectMessage(NativeMethods.SCI_STYLESETSIZE, new IntPtr(Index), new IntPtr(value));
+                scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLESETSIZE, new IntPtr(Index),
+                    new IntPtr(value));
             }
         }
+
+        ///////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// Gets or sets the size of the style font in fractoinal points.
         /// </summary>
-        /// <returns>The size of the style font in fractional number of points. The default is 8.</returns>
         public float SizeF
         {
             get
             {
-                int fraction = scintilla.DirectMessage(NativeMethods.SCI_STYLEGETSIZEFRACTIONAL, new IntPtr(Index), IntPtr.Zero).ToInt32();
+                int fraction = scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLEGETSIZEFRACTIONAL,
+                    new IntPtr(Index), IntPtr.Zero).ToInt32();
                 return (float)fraction / NativeMethods.SC_FONT_SIZE_MULTIPLIER;
             }
             set
             {
-                int fraction = (int)Math.Round(value * NativeMethods.SC_FONT_SIZE_MULTIPLIER);
-                scintilla.DirectMessage(NativeMethods.SCI_STYLESETSIZEFRACTIONAL, new IntPtr(Index), new IntPtr(fraction));
+                int fraction = (int)Math.Round(
+                    value * NativeMethods.SC_FONT_SIZE_MULTIPLIER);
+                scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLESETSIZEFRACTIONAL,
+                    new IntPtr(Index), new IntPtr(fraction));
             }
         }
+
+        ///////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// Gets or sets whether the style is underlined.
         /// </summary>
-        /// <returns>true if underlined; otherwise, false. The default is false.</returns>
         public bool Underline
         {
             get
             {
-                return scintilla.DirectMessage(NativeMethods.SCI_STYLEGETUNDERLINE, new IntPtr(Index), IntPtr.Zero) != IntPtr.Zero;
+                return scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLEGETUNDERLINE, new IntPtr(Index),
+                    IntPtr.Zero) != IntPtr.Zero;
             }
             set
             {
                 IntPtr underline = (value ? new IntPtr(1) : IntPtr.Zero);
-                scintilla.DirectMessage(NativeMethods.SCI_STYLESETUNDERLINE, new IntPtr(Index), underline);
+                scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLESETUNDERLINE, new IntPtr(Index),
+                    underline);
             }
         }
+
+        ///////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// Gets or sets whether the style text is visible.
         /// </summary>
-        /// <returns>true to display the style text; otherwise, false. The default is true.</returns>
         public bool Visible
         {
             get
             {
-                return scintilla.DirectMessage(NativeMethods.SCI_STYLEGETVISIBLE, new IntPtr(Index), IntPtr.Zero) != IntPtr.Zero;
+                return scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLEGETVISIBLE, new IntPtr(Index),
+                    IntPtr.Zero) != IntPtr.Zero;
             }
             set
             {
                 IntPtr visible = (value ? new IntPtr(1) : IntPtr.Zero);
-                scintilla.DirectMessage(NativeMethods.SCI_STYLESETVISIBLE, new IntPtr(Index), visible);
+                scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLESETVISIBLE, new IntPtr(Index),
+                    visible);
             }
         }
+
+        ///////////////////////////////////////////////////////////////////////
 
         /// <summary>
         /// Gets or sets the style font weight.
         /// </summary>
-        /// <returns>The font weight. The default is 400.</returns>
-        /// <remarks>Setting this property affects the <see cref="Bold" /> property.</remarks>
+        /// <remarks>
+        /// Setting this property affects the <see cref="Bold" /> property.
+        /// </remarks>
         public int Weight
         {
             get
             {
-                return scintilla.DirectMessage(NativeMethods.SCI_STYLEGETWEIGHT, new IntPtr(Index), IntPtr.Zero).ToInt32();
+                return scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLEGETWEIGHT, new IntPtr(Index),
+                    IntPtr.Zero).ToInt32();
             }
             set
             {
-                scintilla.DirectMessage(NativeMethods.SCI_STYLESETWEIGHT, new IntPtr(Index), new IntPtr(value));
+                scintilla.DirectMessage(
+                    NativeMethods.SCI_STYLESETWEIGHT, new IntPtr(Index),
+                    new IntPtr(value));
             }
         }
-
         #endregion Properties
 
-        #region Constructors
+        ///////////////////////////////////////////////////////////////////////
 
+        #region Constructors
         /// <summary>
         /// Initializes a new instances of the <see cref="Style" /> class.
         /// </summary>
-        /// <param name="scintilla">The <see cref="Scintilla" /> control that created this style.</param>
-        /// <param name="index">The index of this style within the <see cref="StyleCollection" /> that created it.</param>
-        public Style(Scintilla scintilla, int index)
+        /// <param name="scintilla">
+        /// The <see cref="Scintilla" /> control that created this style.
+        /// </param>
+        /// <param name="index">
+        /// The index of this style within the <see cref="StyleCollection" />
+        /// that created it.
+        /// </param>
+        public Style(
+            Scintilla scintilla, /* in */
+            int index            /* in */
+            )
         {
             this.scintilla = scintilla;
             Index = index;
         }
-
         #endregion Constructors
 
         #region Ada
@@ -373,6 +497,7 @@ namespace ScintillaNET
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Ada" /> lexer.
         /// </summary>
+        [ObjectId("b08805e5-db32-4d90-80bb-0633f48a91d2")]
         public static class Ada
         {
             /// <summary>
@@ -438,11 +563,14 @@ namespace ScintillaNET
 
         #endregion Ada
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Asm
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Asm" /> lexer.
         /// </summary>
+        [ObjectId("04026a44-4ef8-4b01-a1c5-38bc967906d8")]
         public static class Asm
         {
             /// <summary>
@@ -468,7 +596,8 @@ namespace ScintillaNET
             /// <summary>
             /// Math instruction (keword list 1) style index.
             /// </summary>
-            public const int MathInstruction = NativeMethods.SCE_ASM_MATHINSTRUCTION;
+            public const int MathInstruction =
+                NativeMethods.SCE_ASM_MATHINSTRUCTION;
 
             /// <summary>
             /// Double-quoted string style index.
@@ -483,7 +612,8 @@ namespace ScintillaNET
             /// <summary>
             /// CPU instruction (keyword list 0) style index.
             /// </summary>
-            public const int CpuInstruction = NativeMethods.SCE_ASM_CPUINSTRUCTION;
+            public const int CpuInstruction =
+                NativeMethods.SCE_ASM_CPUINSTRUCTION;
 
             /// <summary>
             /// Register (keyword list 2) style index.
@@ -513,26 +643,33 @@ namespace ScintillaNET
             /// <summary>
             /// Directive operand (keyword list 4) style index.
             /// </summary>
-            public const int DirectiveOperand = NativeMethods.SCE_ASM_DIRECTIVEOPERAND;
+            public const int DirectiveOperand =
+                NativeMethods.SCE_ASM_DIRECTIVEOPERAND;
 
             /// <summary>
             /// Extended instruction (keyword list 5) style index.
             /// </summary>
-            public const int ExtInstruction = NativeMethods.SCE_ASM_EXTINSTRUCTION;
+            public const int ExtInstruction =
+                NativeMethods.SCE_ASM_EXTINSTRUCTION;
 
             /// <summary>
             /// Comment directive style index.
             /// </summary>
-            public const int CommentDirective = NativeMethods.SCE_ASM_COMMENTDIRECTIVE;
+            public const int CommentDirective =
+                NativeMethods.SCE_ASM_COMMENTDIRECTIVE;
         }
 
         #endregion Asm
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region BlitzBasic
 
         /// <summary>
-        /// Style constants for use with the <see cref="Lexer.BlitzBasic" /> lexer.
+        /// Style constants for use with the
+        /// <see cref="Lexer.BlitzBasic" /> lexer.
         /// </summary>
+        [ObjectId("51078f12-fa85-4710-977d-27fdfe60c7fd")]
         public static class BlitzBasic
         {
             /// <summary>
@@ -653,11 +790,14 @@ namespace ScintillaNET
 
         #endregion BlitzBasic
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Batch
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Batch" /> lexer.
         /// </summary>
+        [ObjectId("24ae58ca-550c-4ce7-9bc6-bc49bab65bb6")]
         public static class Batch
         {
             /// <summary>
@@ -703,23 +843,27 @@ namespace ScintillaNET
 
         #endregion Batch
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Clw
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Clw" /> lexer.
         /// </summary>
+        [ObjectId("ecb9fc84-2552-4c40-a019-a601d9165ad7")]
         public static class CLW
         {
             /// <summary>
             /// Attributes style index
             /// </summary>
             public const int Attributes = NativeMethods.SCE_CLW_ATTRIBUTE;
-            
+
             /// <summary>
             /// Built in procedures function style index.
             /// </summary>
-            public const int BuiltInProceduresFunction = NativeMethods.SCE_CLW_BUILTIN_PROCEDURES_FUNCTION;
-            
+            public const int BuiltInProceduresFunction =
+                NativeMethods.SCE_CLW_BUILTIN_PROCEDURES_FUNCTION;
+
             /// <summary>
             /// Comment style index.
             /// </summary>
@@ -728,33 +872,35 @@ namespace ScintillaNET
             /// <summary>
             /// Compiler directive style index
             /// </summary>
-            public const int CompilerDirective = NativeMethods.SCE_CLW_COMPILER_DIRECTIVE;
+            public const int CompilerDirective =
+                NativeMethods.SCE_CLW_COMPILER_DIRECTIVE;
 
             /// <summary>
             /// Default (whitespace) style index.
             /// </summary>
             public const int Default = NativeMethods.SCE_CLW_DEFAULT;
-            
+
             /// <summary>
             /// Depreciated style index
             /// </summary>
             public const int Depreciated = NativeMethods.SCE_CLW_DEPRECATED;
-            
+
             /// <summary>
             /// Error style index
             /// </summary>
             public const int Error = NativeMethods.SCE_CLW_ERROR;
-            
+
             /// <summary>
             /// Integer Constant style index.
             /// </summary>
-            public const int IntegerConstant = NativeMethods.SCE_CLW_INTEGER_CONSTANT;
-            
+            public const int IntegerConstant =
+                NativeMethods.SCE_CLW_INTEGER_CONSTANT;
+
             /// <summary>
             /// Keyword style index
             /// </summary>
             public const int Keyword = NativeMethods.SCE_CLW_KEYWORD;
-            
+
             /// <summary>
             /// Label string style index.
             /// </summary>
@@ -763,46 +909,55 @@ namespace ScintillaNET
             /// <summary>
             /// Real Constant style index.
             /// </summary>
-            public const int PictureString = NativeMethods.SCE_CLW_PICTURE_STRING;
-            
+            public const int PictureString =
+                NativeMethods.SCE_CLW_PICTURE_STRING;
+
             /// <summary>
             /// Real Constant style index.
             /// </summary>
-            public const int RealConstant = NativeMethods.SCE_CLW_REAL_CONSTANT;
+            public const int RealConstant =
+                NativeMethods.SCE_CLW_REAL_CONSTANT;
 
             /// <summary>
             /// Runtime expressions style index
             /// </summary>
-            public const int RuntimeExpressions = NativeMethods.SCE_CLW_RUNTIME_EXPRESSIONS;
-            
+            public const int RuntimeExpressions =
+                NativeMethods.SCE_CLW_RUNTIME_EXPRESSIONS;
+
             /// <summary>
             /// Standard equates style index
             /// </summary>
-            public const int StandardEquates = NativeMethods.SCE_CLW_STANDARD_EQUATE;
-            
+            public const int StandardEquates =
+                NativeMethods.SCE_CLW_STANDARD_EQUATE;
+
             /// <summary>
             /// Single-quoted string style index.
             /// </summary>
             public const int String = NativeMethods.SCE_CLW_STRING;
-            
+
             /// <summary>
             /// Structure data type style index.
             /// </summary>
-            public const int StructureDataTypes = NativeMethods.SCE_CLW_STRUCTURE_DATA_TYPE;
-            
+            public const int StructureDataTypes =
+                NativeMethods.SCE_CLW_STRUCTURE_DATA_TYPE;
+
             /// <summary>
             /// User Identifier style index.
             /// </summary>
-            public const int UserIdentifier = NativeMethods.SCE_CLW_USER_IDENTIFIER;
+            public const int UserIdentifier =
+                NativeMethods.SCE_CLW_USER_IDENTIFIER;
         }
 
         #endregion Clw
+
+        ///////////////////////////////////////////////////////////////////////
 
         #region Cpp
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Cpp" /> lexer.
         /// </summary>
+        [ObjectId("24910aac-2dff-4420-a3ba-1b81e7781e5b")]
         public static class Cpp
         {
             /// <summary>
@@ -883,7 +1038,8 @@ namespace ScintillaNET
             /// <summary>
             /// Documentation comment line style index.
             /// </summary>
-            public const int CommentLineDoc = NativeMethods.SCE_C_COMMENTLINEDOC;
+            public const int CommentLineDoc =
+                NativeMethods.SCE_C_COMMENTLINEDOC;
 
             /// <summary>
             /// Keyword style 2 index.
@@ -893,12 +1049,14 @@ namespace ScintillaNET
             /// <summary>
             /// Comment keyword style index.
             /// </summary>
-            public const int CommentDocKeyword = NativeMethods.SCE_C_COMMENTDOCKEYWORD;
+            public const int CommentDocKeyword =
+                NativeMethods.SCE_C_COMMENTDOCKEYWORD;
 
             /// <summary>
             /// Comment keyword error style index.
             /// </summary>
-            public const int CommentDocKeywordError = NativeMethods.SCE_C_COMMENTDOCKEYWORDERROR;
+            public const int CommentDocKeywordError =
+                NativeMethods.SCE_C_COMMENTDOCKEYWORDERROR;
 
             /// <summary>
             /// Global class style index.
@@ -913,22 +1071,26 @@ namespace ScintillaNET
             /// <summary>
             /// Triple-quoted string style index.
             /// </summary>
-            public const int TripleVerbatim = NativeMethods.SCE_C_TRIPLEVERBATIM;
+            public const int TripleVerbatim =
+                NativeMethods.SCE_C_TRIPLEVERBATIM;
 
             /// <summary>
             /// Hash-quoted string style index.
             /// </summary>
-            public const int HashQuotedString = NativeMethods.SCE_C_HASHQUOTEDSTRING;
+            public const int HashQuotedString =
+                NativeMethods.SCE_C_HASHQUOTEDSTRING;
 
             /// <summary>
             /// Preprocessor comment style index.
             /// </summary>
-            public const int PreprocessorComment = NativeMethods.SCE_C_PREPROCESSORCOMMENT;
+            public const int PreprocessorComment =
+                NativeMethods.SCE_C_PREPROCESSORCOMMENT;
 
             /// <summary>
             /// Preprocessor documentation comment style index.
             /// </summary>
-            public const int PreprocessorCommentDoc = NativeMethods.SCE_C_PREPROCESSORCOMMENTDOC;
+            public const int PreprocessorCommentDoc =
+                NativeMethods.SCE_C_PREPROCESSORCOMMENTDOC;
 
             /// <summary>
             /// User-defined literal style index.
@@ -943,16 +1105,20 @@ namespace ScintillaNET
             /// <summary>
             /// Escape sequence style index.
             /// </summary>
-            public const int EscapeSequence = NativeMethods.SCE_C_ESCAPESEQUENCE;
+            public const int EscapeSequence =
+                NativeMethods.SCE_C_ESCAPESEQUENCE;
         }
 
         #endregion Cpp
-        
+
+        ///////////////////////////////////////////////////////////////////////
+
         #region Css
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Css" /> lexer.
         /// </summary>
+        [ObjectId("1f743c79-0d53-4bd0-baeb-4f8d20b6ff94")]
         public static class Css
         {
             /// <summary>
@@ -978,7 +1144,8 @@ namespace ScintillaNET
             /// <summary>
             /// Unknown pseudo class style index.
             /// </summary>
-            public const int UnknownPseudoClass = NativeMethods.SCE_CSS_UNKNOWN_PSEUDOCLASS;
+            public const int UnknownPseudoClass =
+                NativeMethods.SCE_CSS_UNKNOWN_PSEUDOCLASS;
 
             /// <summary>
             /// Operator style index.
@@ -993,7 +1160,8 @@ namespace ScintillaNET
             /// <summary>
             /// Unknown identifier style index.
             /// </summary>
-            public const int UnknownIdentifier = NativeMethods.SCE_CSS_UNKNOWN_IDENTIFIER;
+            public const int UnknownIdentifier =
+                NativeMethods.SCE_CSS_UNKNOWN_IDENTIFIER;
 
             /// <summary>
             /// Value style index.
@@ -1048,22 +1216,26 @@ namespace ScintillaNET
             /// <summary>
             /// Pseudo element style index.
             /// </summary>
-            public const int PseudoElement = NativeMethods.SCE_CSS_PSEUDOELEMENT;
+            public const int PseudoElement =
+                NativeMethods.SCE_CSS_PSEUDOELEMENT;
 
             /// <summary>
             /// Extended identifier style index.
             /// </summary>
-            public const int ExtendedIdentifier = NativeMethods.SCE_CSS_EXTENDED_IDENTIFIER;
+            public const int ExtendedIdentifier =
+                NativeMethods.SCE_CSS_EXTENDED_IDENTIFIER;
 
             /// <summary>
             /// Extended pseudo class style index.
             /// </summary>
-            public const int ExtendedPseudoClass = NativeMethods.SCE_CSS_EXTENDED_PSEUDOCLASS;
+            public const int ExtendedPseudoClass =
+                NativeMethods.SCE_CSS_EXTENDED_PSEUDOCLASS;
 
             /// <summary>
             /// Extended pseudo element style index.
             /// </summary>
-            public const int ExtendedPseudoElement = NativeMethods.SCE_CSS_EXTENDED_PSEUDOELEMENT;
+            public const int ExtendedPseudoElement =
+                NativeMethods.SCE_CSS_EXTENDED_PSEUDOELEMENT;
 
             /// <summary>
             /// Media style index.
@@ -1078,11 +1250,15 @@ namespace ScintillaNET
 
         #endregion Css
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Fortran
 
         /// <summary>
-        /// Style constants for use with the <see cref="Lexer.Fortran" /> lexer.
+        /// Style constants for use with the
+        /// <see cref="Lexer.Fortran" /> lexer.
         /// </summary>
+        [ObjectId("e84690ff-949b-4f80-989b-29d848f012c1")]
         public static class Fortran
         {
             /// <summary>
@@ -1163,11 +1339,15 @@ namespace ScintillaNET
 
         #endregion Fortran
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region FreeBasic
 
         /// <summary>
-        /// Style constants for use with the <see cref="Lexer.FreeBasic" /> lexer.
+        /// Style constants for use with the
+        /// <see cref="Lexer.FreeBasic" /> lexer.
         /// </summary>
+        [ObjectId("8d465678-5d6a-474e-9bd3-8ef5f74f24c2")]
         public static class FreeBasic
         {
             /// <summary>
@@ -1288,11 +1468,14 @@ namespace ScintillaNET
 
         #endregion FreeBasic
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Html
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Html" /> lexer.
         /// </summary>
+        [ObjectId("8dc21c3a-31ce-4abb-a9d8-f418df1bc4d5")]
         public static class Html
         {
             /// <summary>
@@ -1318,7 +1501,8 @@ namespace ScintillaNET
             /// <summary>
             /// Unknown attribute style index.
             /// </summary>
-            public const int AttributeUnknown = NativeMethods.SCE_H_ATTRIBUTEUNKNOWN;
+            public const int AttributeUnknown =
+                NativeMethods.SCE_H_ATTRIBUTEUNKNOWN;
 
             /// <summary>
             /// Number style index.
@@ -1403,11 +1587,14 @@ namespace ScintillaNET
 
         #endregion Html
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Json
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Json" /> lexer.
         /// </summary>
+        [ObjectId("c6d87a8b-d778-42b9-995d-09ca8c668299")]
         public static class Json
         {
             /// <summary>
@@ -1433,12 +1620,14 @@ namespace ScintillaNET
             /// <summary>
             /// Property name style index.
             /// </summary>
-            public const int PropertyName = NativeMethods.SCE_JSON_PROPERTYNAME;
+            public const int PropertyName =
+                NativeMethods.SCE_JSON_PROPERTYNAME;
 
             /// <summary>
             /// Escape sequence style index.
             /// </summary>
-            public const int EscapeSequence = NativeMethods.SCE_JSON_ESCAPESEQUENCE;
+            public const int EscapeSequence =
+                NativeMethods.SCE_JSON_ESCAPESEQUENCE;
 
             /// <summary>
             /// Line comment style index.
@@ -1448,7 +1637,8 @@ namespace ScintillaNET
             /// <summary>
             /// Block comment style index.
             /// </summary>
-            public const int BlockComment = NativeMethods.SCE_JSON_BLOCKCOMMENT;
+            public const int BlockComment =
+                NativeMethods.SCE_JSON_BLOCKCOMMENT;
 
             /// <summary>
             /// Operator style index.
@@ -1461,7 +1651,8 @@ namespace ScintillaNET
             public const int Uri = NativeMethods.SCE_JSON_URI;
 
             /// <summary>
-            /// Compact Internationalized Resource Identifier (IRI) style index.
+            /// Compact Internationalized Resource Identifier (IRI) style
+            /// index.
             /// </summary>
             public const int CompactIRI = NativeMethods.SCE_JSON_COMPACTIRI;
 
@@ -1483,11 +1674,14 @@ namespace ScintillaNET
 
         #endregion Json
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Lisp
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Lisp" /> lexer.
         /// </summary>
+        [ObjectId("70c0acb1-b72f-4c8f-877a-1a5c241595b8")]
         public static class Lisp
         {
             /// <summary>
@@ -1548,16 +1742,20 @@ namespace ScintillaNET
             /// <summary>
             /// Multi-line comment style index.
             /// </summary>
-            public const int MultiComment = NativeMethods.SCE_LISP_MULTI_COMMENT;
+            public const int MultiComment =
+                NativeMethods.SCE_LISP_MULTI_COMMENT;
         }
 
         #endregion Lisp
+
+        ///////////////////////////////////////////////////////////////////////
 
         #region Lua
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Lua" /> lexer.
         /// </summary>
+        [ObjectId("8310e20d-e70c-48fe-9cd4-eba2ca36b1df")]
         public static class Lua
         {
             /// <summary>
@@ -1603,7 +1801,8 @@ namespace ScintillaNET
             /// <summary>
             /// Literal string style index.
             /// </summary>
-            public const int LiteralString = NativeMethods.SCE_LUA_LITERALSTRING;
+            public const int LiteralString =
+                NativeMethods.SCE_LUA_LITERALSTRING;
 
             /// <summary>
             /// Preprocessor style index.
@@ -1668,11 +1867,14 @@ namespace ScintillaNET
 
         #endregion Lua
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Pascal
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Pascal" /> lexer.
         /// </summary>
+        [ObjectId("c47d2ce1-1656-44a4-82ba-b2b8b4438a0c")]
         public static class Pascal
         {
             /// <summary>
@@ -1708,7 +1910,8 @@ namespace ScintillaNET
             /// <summary>
             /// Preprocessor style 2 "(*$" index.
             /// </summary>
-            public const int Preprocessor2 = NativeMethods.SCE_PAS_PREPROCESSOR2;
+            public const int Preprocessor2 =
+                NativeMethods.SCE_PAS_PREPROCESSOR2;
 
             /// <summary>
             /// Number style index.
@@ -1753,11 +1956,14 @@ namespace ScintillaNET
 
         #endregion Pascal
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Perl
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Perl" /> lexer.
         /// </summary>
+        [ObjectId("2ba538c4-783a-4953-9512-a3d8664a4ebe")]
         public static class Perl
         {
             /// <summary>
@@ -1843,7 +2049,8 @@ namespace ScintillaNET
             /// <summary>
             /// Variable indexer index.
             /// </summary>
-            public const int VariableIndexer = NativeMethods.SCE_PL_VARIABLE_INDEXER;
+            public const int VariableIndexer =
+                NativeMethods.SCE_PL_VARIABLE_INDEXER;
 
             /// <summary>
             /// Regular expression style index.
@@ -1985,17 +2192,22 @@ namespace ScintillaNET
 
         #endregion Perl
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region PhpScript
 
         /// <summary>
-        /// Style constants for use with the <see cref="Lexer.PhpScript" /> lexer.
+        /// Style constants for use with the
+        /// <see cref="Lexer.PhpScript" /> lexer.
         /// </summary>
+        [ObjectId("cd443070-29dd-4e14-8086-8d795cc267f8")]
         public static class PhpScript
         {
             /// <summary>
             /// Complex Variable style index.
             /// </summary>
-            public const int ComplexVariable = NativeMethods.SCE_HPHP_COMPLEX_VARIABLE;
+            public const int ComplexVariable =
+                NativeMethods.SCE_HPHP_COMPLEX_VARIABLE;
 
             /// <summary>
             /// Default (whitespace) style index.
@@ -2010,7 +2222,8 @@ namespace ScintillaNET
             /// <summary>
             /// Single-quoted string style index.
             /// </summary>
-            public const int SimpleString = NativeMethods.SCE_HPHP_SIMPLESTRING;
+            public const int SimpleString =
+                NativeMethods.SCE_HPHP_SIMPLESTRING;
 
             /// <summary>
             /// Keyword style index.
@@ -2040,7 +2253,8 @@ namespace ScintillaNET
             /// <summary>
             /// Double-quoted string variable style index.
             /// </summary>
-            public const int HStringVariable = NativeMethods.SCE_HPHP_HSTRING_VARIABLE;
+            public const int HStringVariable =
+                NativeMethods.SCE_HPHP_HSTRING_VARIABLE;
 
             /// <summary>
             /// Operator style index.
@@ -2050,11 +2264,15 @@ namespace ScintillaNET
 
         #endregion PhpScript
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region PowerShell
 
         /// <summary>
-        /// Style constants for use with the <see cref="Lexer.PowerShell" /> lexer.
+        /// Style constants for use with the
+        /// <see cref="Lexer.PowerShell" /> lexer.
         /// </summary>
+        [ObjectId("8dbb9fe8-c540-4cb3-be6d-8e72cacbdef7")]
         public static class PowerShell
         {
             /// <summary>
@@ -2075,7 +2293,8 @@ namespace ScintillaNET
             /// <summary>
             /// Character style index.
             /// </summary>
-            public const int Character = NativeMethods.SCE_POWERSHELL_CHARACTER;
+            public const int Character =
+                NativeMethods.SCE_POWERSHELL_CHARACTER;
 
             /// <summary>
             /// Number style index.
@@ -2095,7 +2314,8 @@ namespace ScintillaNET
             /// <summary>
             /// Identifier style index.
             /// </summary>
-            public const int Identifier = NativeMethods.SCE_POWERSHELL_IDENTIFIER;
+            public const int Identifier =
+                NativeMethods.SCE_POWERSHELL_IDENTIFIER;
 
             /// <summary>
             /// Keyword (set 0) style index.
@@ -2125,31 +2345,39 @@ namespace ScintillaNET
             /// <summary>
             /// Multi-line comment style index.
             /// </summary>
-            public const int CommentStream = NativeMethods.SCE_POWERSHELL_COMMENTSTREAM;
+            public const int CommentStream =
+                NativeMethods.SCE_POWERSHELL_COMMENTSTREAM;
 
             /// <summary>
             /// Here string style index.
             /// </summary>
-            public const int HereString = NativeMethods.SCE_POWERSHELL_HERE_STRING;
+            public const int HereString =
+                NativeMethods.SCE_POWERSHELL_HERE_STRING;
 
             /// <summary>
             /// Here character style index.
             /// </summary>
-            public const int HereCharacter = NativeMethods.SCE_POWERSHELL_HERE_CHARACTER;
+            public const int HereCharacter =
+                NativeMethods.SCE_POWERSHELL_HERE_CHARACTER;
 
             /// <summary>
             /// Comment based help keyword style index.
             /// </summary>
-            public const int CommentDocKeyword = NativeMethods.SCE_POWERSHELL_COMMENTDOCKEYWORD;
+            public const int CommentDocKeyword =
+                NativeMethods.SCE_POWERSHELL_COMMENTDOCKEYWORD;
         }
 
         #endregion PowerShell
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Properties
 
         /// <summary>
-        /// Style constants for use with the <see cref="Lexer.Properties" /> lexer.
+        /// Style constants for use with the
+        /// <see cref="Lexer.Properties" /> lexer.
         /// </summary>
+        [ObjectId("a3368d0b-9ab5-4f58-8af6-9328780f684a")]
         public static class Properties
         {
             /// <summary>
@@ -2185,11 +2413,15 @@ namespace ScintillaNET
 
         #endregion Properties
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region PureBasic
 
         /// <summary>
-        /// Style constants for use with the <see cref="Lexer.PureBasic" /> lexer.
+        /// Style constants for use with the
+        /// <see cref="Lexer.PureBasic" /> lexer.
         /// </summary>
+        [ObjectId("3191a941-98ba-46fc-8784-effbc7022494")]
         public static class PureBasic
         {
             /// <summary>
@@ -2310,11 +2542,14 @@ namespace ScintillaNET
 
         #endregion PureBasic
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Python
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Python" /> lexer.
         /// </summary>
+        [ObjectId("3b788bb1-5ad8-483c-8cf8-5cb60f3035ab")]
         public static class Python
         {
             /// <summary>
@@ -2400,11 +2635,14 @@ namespace ScintillaNET
 
         #endregion Python
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Ruby
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Ruby" /> lexer.
         /// </summary>
+        [ObjectId("87b41feb-6f77-4eca-81da-edc86af208cd")]
         public static class Ruby
         {
             /// <summary>
@@ -2577,11 +2815,15 @@ namespace ScintillaNET
 
         #endregion Ruby
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Smalltalk
 
         /// <summary>
-        /// Style constants for use with the <see cref="Lexer.Smalltalk" /> lexer.
+        /// Style constants for use with the
+        /// <see cref="Lexer.Smalltalk" /> lexer.
         /// </summary>
+        [ObjectId("f3fa0e28-0c1f-4d1b-8a25-f07664448c59")]
         public static class Smalltalk
         {
             /// <summary>
@@ -2672,11 +2914,14 @@ namespace ScintillaNET
 
         #endregion Smalltalk
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Sql
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Sql" /> lexer.
         /// </summary>
+        [ObjectId("1c8df08b-54b5-4bcf-9512-0a8ff5621e56")]
         public static class Sql
         {
             /// <summary>
@@ -2727,7 +2972,8 @@ namespace ScintillaNET
             /// <summary>
             /// SQL*Plus prompt style index.
             /// </summary>
-            public const int SqlPlusPrompt = NativeMethods.SCE_SQL_SQLPLUS_PROMPT;
+            public const int SqlPlusPrompt =
+                NativeMethods.SCE_SQL_SQLPLUS_PROMPT;
 
             /// <summary>
             /// Operator style index.
@@ -2742,12 +2988,14 @@ namespace ScintillaNET
             /// <summary>
             /// SQL*Plus comment style index.
             /// </summary>
-            public const int SqlPlusComment = NativeMethods.SCE_SQL_SQLPLUS_COMMENT;
+            public const int SqlPlusComment =
+                NativeMethods.SCE_SQL_SQLPLUS_COMMENT;
 
             /// <summary>
             /// Documentation line comment style index.
             /// </summary>
-            public const int CommentLineDoc = NativeMethods.SCE_SQL_COMMENTLINEDOC;
+            public const int CommentLineDoc =
+                NativeMethods.SCE_SQL_COMMENTLINEDOC;
 
             /// <summary>
             /// Keyword list 2 (index 1) style index.
@@ -2757,12 +3005,14 @@ namespace ScintillaNET
             /// <summary>
             /// Documentation (Doxygen) keyword style index.
             /// </summary>
-            public const int CommentDocKeyword = NativeMethods.SCE_SQL_COMMENTDOCKEYWORD;
+            public const int CommentDocKeyword =
+                NativeMethods.SCE_SQL_COMMENTDOCKEYWORD;
 
             /// <summary>
             /// Documentation (Doxygen) keyword error style index.
             /// </summary>
-            public const int CommentDocKeywordError = NativeMethods.SCE_SQL_COMMENTDOCKEYWORDERROR;
+            public const int CommentDocKeywordError =
+                NativeMethods.SCE_SQL_COMMENTDOCKEYWORDERROR;
 
             /// <summary>
             /// Keyword user-list 1 (index 4) style index.
@@ -2787,7 +3037,8 @@ namespace ScintillaNET
             /// <summary>
             /// Quoted identifier style index.
             /// </summary>
-            public const int QuotedIdentifier = NativeMethods.SCE_SQL_QUOTEDIDENTIFIER;
+            public const int QuotedIdentifier =
+                NativeMethods.SCE_SQL_QUOTEDIDENTIFIER;
 
             /// <summary>
             /// Q operator style index.
@@ -2797,11 +3048,15 @@ namespace ScintillaNET
 
         #endregion Sql
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Markdown
 
         /// <summary>
-        /// Style constants for use with the <see cref="Lexer.Markdown" /> lexer.
+        /// Style constants for use with the
+        /// <see cref="Lexer.Markdown" /> lexer.
         /// </summary>
+        [ObjectId("b626e228-c980-43bd-84f9-1a50e8daf601")]
         public static class Markdown
         {
             /// <summary>
@@ -2882,7 +3137,8 @@ namespace ScintillaNET
             /// <summary>
             /// Blockquote style index.
             /// </summary>
-            public const int BlockQuote = NativeMethods.SCE_MARKDOWN_BLOCKQUOTE;
+            public const int BlockQuote =
+                NativeMethods.SCE_MARKDOWN_BLOCKQUOTE;
 
             /// <summary>
             /// Strikeout style index.
@@ -2917,11 +3173,14 @@ namespace ScintillaNET
 
         #endregion Markdown
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region R
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.R" /> lexer.
         /// </summary>
+        [ObjectId("e2a2f514-dc65-4632-b24a-0420b426027e")]
         public static class R
         {
             /// <summary>
@@ -2987,131 +3246,138 @@ namespace ScintillaNET
 
         #endregion R
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Tcl
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Tcl" /> lexer.
         /// </summary>
+        [ObjectId("6934022f-5470-4460-a5a2-0028d6e94438")]
         public static class Tcl
         {
             /// <summary>
-            /// TBD
+            /// Default (whitespace) style index.
             /// </summary>
             public const int Default = NativeMethods.SCE_TCL_DEFAULT;
 
             /// <summary>
-            /// TBD
+            /// Comment style index.
             /// </summary>
             public const int Comment = NativeMethods.SCE_TCL_COMMENT;
 
             /// <summary>
-            /// TBD
+            /// Line comment style index.
             /// </summary>
             public const int CommentLine = NativeMethods.SCE_TCL_COMMENTLINE;
 
             /// <summary>
-            /// TBD
+            /// Number style index.
             /// </summary>
             public const int Number = NativeMethods.SCE_TCL_NUMBER;
 
             /// <summary>
-            /// TBD
+            /// Keyword within a quoted string style index.
             /// </summary>
             public const int WordInQuote = NativeMethods.SCE_TCL_WORD_IN_QUOTE;
 
             /// <summary>
-            /// TBD
+            /// Double-quoted string style index.
             /// </summary>
             public const int InQuote = NativeMethods.SCE_TCL_IN_QUOTE;
 
             /// <summary>
-            /// TBD
+            /// Operator style index.
             /// </summary>
             public const int Operator = NativeMethods.SCE_TCL_OPERATOR;
 
             /// <summary>
-            /// TBD
+            /// Identifier style index.
             /// </summary>
             public const int Identifier = NativeMethods.SCE_TCL_IDENTIFIER;
 
             /// <summary>
-            /// TBD
+            /// Substitution ($variable) style index.
             /// </summary>
             public const int Substitution = NativeMethods.SCE_TCL_SUBSTITUTION;
 
             /// <summary>
-            /// TBD
+            /// Brace substitution (${name}) style index.
             /// </summary>
             public const int SubBrace = NativeMethods.SCE_TCL_SUB_BRACE;
 
             /// <summary>
-            /// TBD
+            /// Modifier style index.
             /// </summary>
             public const int Modifier = NativeMethods.SCE_TCL_MODIFIER;
 
             /// <summary>
-            /// TBD
+            /// Argument expansion ({keyword}, keyword list 4) style index.
             /// </summary>
             public const int Expand = NativeMethods.SCE_TCL_EXPAND;
 
             /// <summary>
-            /// TBD
+            /// Keyword (list 0) style index.
             /// </summary>
             public const int Word = NativeMethods.SCE_TCL_WORD;
 
             /// <summary>
-            /// TBD
+            /// Keyword (list 1) style index.
             /// </summary>
             public const int Word2 = NativeMethods.SCE_TCL_WORD2;
 
             /// <summary>
-            /// TBD
+            /// Keyword (list 2) style index.
             /// </summary>
             public const int Word3 = NativeMethods.SCE_TCL_WORD3;
 
             /// <summary>
-            /// TBD
+            /// Keyword (list 3) style index.
             /// </summary>
             public const int Word4 = NativeMethods.SCE_TCL_WORD4;
 
             /// <summary>
-            /// TBD
+            /// Keyword (list 5) style index.
             /// </summary>
             public const int Word5 = NativeMethods.SCE_TCL_WORD5;
 
             /// <summary>
-            /// TBD
+            /// Keyword (list 6) style index.
             /// </summary>
             public const int Word6 = NativeMethods.SCE_TCL_WORD6;
 
             /// <summary>
-            /// TBD
+            /// Keyword (list 7) style index.
             /// </summary>
             public const int Word7 = NativeMethods.SCE_TCL_WORD7;
 
             /// <summary>
-            /// TBD
+            /// Keyword (list 8) style index.
             /// </summary>
             public const int Word8 = NativeMethods.SCE_TCL_WORD8;
 
             /// <summary>
-            /// TBD
+            /// Comment box style index.
             /// </summary>
             public const int CommentBox = NativeMethods.SCE_TCL_COMMENT_BOX;
 
             /// <summary>
-            /// TBD
+            /// Block comment style index.
             /// </summary>
-            public const int BlockComment = NativeMethods.SCE_TCL_BLOCK_COMMENT;
+            public const int BlockComment =
+                NativeMethods.SCE_TCL_BLOCK_COMMENT;
         }
 
-        #endregion
+        #endregion Tcl
+
+        ///////////////////////////////////////////////////////////////////////
 
         #region Vb
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Vb" /> lexer.
         /// </summary>
+        [ObjectId("1a14d7ee-2a44-474e-b1c5-180ce7e0d563")]
         public static class Vb
         {
             /// <summary>
@@ -3232,11 +3498,15 @@ namespace ScintillaNET
 
         #endregion Vb
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region VbScript
 
         /// <summary>
-        /// Style constants for use with the <see cref="Lexer.VbScript" /> lexer.
+        /// Style constants for use with the
+        /// <see cref="Lexer.VbScript" /> lexer.
         /// </summary>
+        [ObjectId("84eccbdc-1a63-491a-89f5-45a63c12d2ed")]
         public static class VbScript
         {
             /// <summary>
@@ -3357,11 +3627,15 @@ namespace ScintillaNET
 
         #endregion VbScript
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Verilog
 
         /// <summary>
-        /// Style constants for use with the <see cref="Lexer.Verilog" /> lexer.
+        /// Style constants for use with the
+        /// <see cref="Lexer.Verilog" /> lexer.
         /// </summary>
+        [ObjectId("246ffe99-24e4-4332-a3d7-8e0e127fa445")]
         public static class Verilog
         {
             /// <summary>
@@ -3382,7 +3656,8 @@ namespace ScintillaNET
             /// <summary>
             /// Comment line bang (exclamation) style index.
             /// </summary>
-            public const int CommentLineBang = NativeMethods.SCE_V_COMMENTLINEBANG;
+            public const int CommentLineBang =
+                NativeMethods.SCE_V_COMMENTLINEBANG;
 
             /// <summary>
             /// Number style index.
@@ -3462,11 +3737,14 @@ namespace ScintillaNET
 
         #endregion Verilog
 
+        ///////////////////////////////////////////////////////////////////////
+
         #region Xml
 
         /// <summary>
         /// Style constants for use with the <see cref="Lexer.Xml" /> lexer.
         /// </summary>
+        [ObjectId("46ce7078-b7cc-49af-a5ed-0c736c042f72")]
         public static class Xml
         {
             /// <summary>
@@ -3492,7 +3770,8 @@ namespace ScintillaNET
             /// <summary>
             /// Unknown attribute style index.
             /// </summary>
-            public const int AttributeUnknown = NativeMethods.SCE_H_ATTRIBUTEUNKNOWN;
+            public const int AttributeUnknown =
+                NativeMethods.SCE_H_ATTRIBUTEUNKNOWN;
 
             /// <summary>
             /// Number style index.
