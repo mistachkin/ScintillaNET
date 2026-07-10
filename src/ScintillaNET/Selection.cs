@@ -1,153 +1,243 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+/*
+ * Selection.cs --
+ *
+ * Copyright (c) 2017 Jacob Slusser, https://github.com/jacobslusser
+ * Copyright (c) 2019-2026 by Joe Mistachkin.  All rights reserved.
+ *
+ * This file is part of ScintillaNET, which is distributed under the MIT
+ * License; see the file "LICENSE" for full terms and a DISCLAIMER OF ALL
+ * WARRANTIES.
+ *
+ * RCS: @(#) $Id: $
+ */
+
+using System;
 
 namespace ScintillaNET
 {
     /// <summary>
-    /// Represents a selection when there are multiple active selections in a <see cref="Scintilla" /> control.
+    /// Represents a selection when there are multiple active selections in
+    /// a <see cref="Scintilla" /> control.
     /// </summary>
+    [ObjectId("9c49f192-4dd5-42c8-bba4-36ce7a240a06")]
     public class Selection
     {
+        #region Private Data
+        /// <summary>
+        /// The <see cref="Scintilla" /> control that created this selection.
+        /// </summary>
         private readonly Scintilla scintilla;
 
         /// <summary>
-        /// Gets or sets the anchor position of the selection.
+        /// The zero-based selection index within the
+        /// <see cref="SelectionCollection" /> that created it.
         /// </summary>
-        /// <returns>The zero-based document position of the selection anchor.</returns>
+        private readonly int index;
+        #endregion
+
+        ///////////////////////////////////////////////////////////////////////
+
+        #region Public Constructors
+        /// <summary>
+        /// Constructs an instance of this class using the specified
+        /// <see cref="Scintilla" /> control and selection index.
+        /// </summary>
+        /// <param name="scintilla">
+        /// The <see cref="Scintilla" /> control that created this selection.
+        /// </param>
+        /// <param name="index">
+        /// The index of this selection within the
+        /// <see cref="SelectionCollection" /> that created it.
+        /// </param>
+        public Selection(
+            Scintilla scintilla, /* in */
+            int index            /* in */
+            )
+        {
+            this.scintilla = scintilla;
+            this.index = index;
+        }
+        #endregion
+
+        ///////////////////////////////////////////////////////////////////////
+
+        #region Public Properties
+        /// <summary>
+        /// Gets or sets the zero-based document position of the selection
+        /// anchor.
+        /// </summary>
         public long Anchor
         {
             get
             {
-                long pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNANCHOR, new IntPtr(Index)).ToInt64();
+                long pos = this.scintilla.DirectMessage(
+                    NativeMethods.SCI_GETSELECTIONNANCHOR,
+                    new IntPtr(this.index)).ToInt64();
+
                 if (pos <= 0)
                     return pos;
 
-                return scintilla.Lines.ByteToCharPosition(pos);
+                return this.scintilla.Lines.ByteToCharPosition(pos);
             }
             set
             {
-                value = Helpers.Clamp(value, 0, scintilla.TextLength);
-                value = scintilla.Lines.CharToBytePosition(value);
-                scintilla.DirectMessage(NativeMethods.SCI_SETSELECTIONNANCHOR, new IntPtr(Index), new IntPtr(value));
+                value = Helpers.Clamp(value, 0, this.scintilla.TextLength);
+                value = this.scintilla.Lines.CharToBytePosition(value);
+
+                this.scintilla.DirectMessage(
+                    NativeMethods.SCI_SETSELECTIONNANCHOR,
+                    new IntPtr(this.index), new IntPtr(value));
             }
         }
 
+        ///////////////////////////////////////////////////////////////////////
+
         /// <summary>
-        /// Gets or sets the amount of anchor virtual space.
+        /// Gets or sets the amount of virtual space past the end of the line
+        /// offsetting the selection anchor.
         /// </summary>
-        /// <returns>The amount of virtual space past the end of the line offsetting the selection anchor.</returns>
         public long AnchorVirtualSpace
         {
             get
             {
-                return scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNANCHORVIRTUALSPACE, new IntPtr(Index)).ToInt64();
+                return this.scintilla.DirectMessage(
+                    NativeMethods.SCI_GETSELECTIONNANCHORVIRTUALSPACE,
+                    new IntPtr(this.index)).ToInt64();
             }
             set
             {
                 value = Helpers.ClampMin(value, 0);
-                scintilla.DirectMessage(NativeMethods.SCI_SETSELECTIONNANCHORVIRTUALSPACE, new IntPtr(Index), new IntPtr(value));
+
+                this.scintilla.DirectMessage(
+                    NativeMethods.SCI_SETSELECTIONNANCHORVIRTUALSPACE,
+                    new IntPtr(this.index), new IntPtr(value));
             }
         }
 
+        ///////////////////////////////////////////////////////////////////////
+
         /// <summary>
-        /// Gets or sets the caret position of the selection.
+        /// Gets or sets the zero-based document position of the selection
+        /// caret.
         /// </summary>
-        /// <returns>The zero-based document position of the selection caret.</returns>
         public long Caret
         {
             get
             {
-                long pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNCARET, new IntPtr(Index)).ToInt64();
+                long pos = this.scintilla.DirectMessage(
+                    NativeMethods.SCI_GETSELECTIONNCARET,
+                    new IntPtr(this.index)).ToInt64();
+
                 if (pos <= 0)
                     return pos;
 
-                return scintilla.Lines.ByteToCharPosition(pos);
+                return this.scintilla.Lines.ByteToCharPosition(pos);
             }
             set
             {
-                value = Helpers.Clamp(value, 0, scintilla.TextLength);
-                value = scintilla.Lines.CharToBytePosition(value);
-                scintilla.DirectMessage(NativeMethods.SCI_SETSELECTIONNCARET, new IntPtr(Index), new IntPtr(value));
+                value = Helpers.Clamp(value, 0, this.scintilla.TextLength);
+                value = this.scintilla.Lines.CharToBytePosition(value);
+
+                this.scintilla.DirectMessage(
+                    NativeMethods.SCI_SETSELECTIONNCARET,
+                    new IntPtr(this.index), new IntPtr(value));
             }
         }
 
+        ///////////////////////////////////////////////////////////////////////
+
         /// <summary>
-        /// Gets or sets the amount of caret virtual space.
+        /// Gets or sets the amount of virtual space past the end of the line
+        /// offsetting the selection caret.
         /// </summary>
-        /// <returns>The amount of virtual space past the end of the line offsetting the selection caret.</returns>
         public long CaretVirtualSpace
         {
             get
             {
-                return scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNCARETVIRTUALSPACE, new IntPtr(Index)).ToInt64();
+                return this.scintilla.DirectMessage(
+                    NativeMethods.SCI_GETSELECTIONNCARETVIRTUALSPACE,
+                    new IntPtr(this.index)).ToInt64();
             }
             set
             {
                 value = Helpers.ClampMin(value, 0);
-                scintilla.DirectMessage(NativeMethods.SCI_SETSELECTIONNCARETVIRTUALSPACE, new IntPtr(Index), new IntPtr(value));
+
+                this.scintilla.DirectMessage(
+                    NativeMethods.SCI_SETSELECTIONNCARETVIRTUALSPACE,
+                    new IntPtr(this.index), new IntPtr(value));
             }
         }
 
+        ///////////////////////////////////////////////////////////////////////
+
         /// <summary>
-        /// Gets or sets the end position of the selection.
+        /// Gets or sets the zero-based document position where the selection
+        /// ends.
         /// </summary>
-        /// <returns>The zero-based document position where the selection ends.</returns>
         public long End
         {
             get
             {
-                long pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNEND, new IntPtr(Index)).ToInt64();
+                long pos = this.scintilla.DirectMessage(
+                    NativeMethods.SCI_GETSELECTIONNEND,
+                    new IntPtr(this.index)).ToInt64();
+
                 if (pos <= 0)
                     return pos;
 
-                return scintilla.Lines.ByteToCharPosition(pos);
+                return this.scintilla.Lines.ByteToCharPosition(pos);
             }
             set
             {
-                value = Helpers.Clamp(value, 0, scintilla.TextLength);
-                value = scintilla.Lines.CharToBytePosition(value);
-                scintilla.DirectMessage(NativeMethods.SCI_SETSELECTIONNEND, new IntPtr(Index), new IntPtr(value));
+                value = Helpers.Clamp(value, 0, this.scintilla.TextLength);
+                value = this.scintilla.Lines.CharToBytePosition(value);
+
+                this.scintilla.DirectMessage(
+                    NativeMethods.SCI_SETSELECTIONNEND,
+                    new IntPtr(this.index), new IntPtr(value));
             }
         }
 
-        /// <summary>
-        /// Gets the selection index.
-        /// </summary>
-        /// <returns>The zero-based selection index within the <see cref="SelectionCollection" /> that created it.</returns>
-        public int Index { get; private set; }
+        ///////////////////////////////////////////////////////////////////////
 
         /// <summary>
-        /// Gets or sets the start position of the selection.
+        /// Gets the zero-based selection index within the
+        /// <see cref="SelectionCollection" /> that created it.
         /// </summary>
-        /// <returns>The zero-based document position where the selection starts.</returns>
+        public int Index
+        {
+            get { return this.index; }
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+
+        /// <summary>
+        /// Gets or sets the zero-based document position where the selection
+        /// starts.
+        /// </summary>
         public long Start
         {
             get
             {
-                long pos = scintilla.DirectMessage(NativeMethods.SCI_GETSELECTIONNSTART, new IntPtr(Index)).ToInt64();
+                long pos = this.scintilla.DirectMessage(
+                    NativeMethods.SCI_GETSELECTIONNSTART,
+                    new IntPtr(this.index)).ToInt64();
+
                 if (pos <= 0)
                     return pos;
 
-                return scintilla.Lines.ByteToCharPosition(pos);
+                return this.scintilla.Lines.ByteToCharPosition(pos);
             }
             set
             {
-                value = Helpers.Clamp(value, 0, scintilla.TextLength);
-                value = scintilla.Lines.CharToBytePosition(value);
-                scintilla.DirectMessage(NativeMethods.SCI_SETSELECTIONNSTART, new IntPtr(Index), new IntPtr(value));
+                value = Helpers.Clamp(value, 0, this.scintilla.TextLength);
+                value = this.scintilla.Lines.CharToBytePosition(value);
+
+                this.scintilla.DirectMessage(
+                    NativeMethods.SCI_SETSELECTIONNSTART,
+                    new IntPtr(this.index), new IntPtr(value));
             }
         }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Selection" /> class.
-        /// </summary>
-        /// <param name="scintilla">The <see cref="Scintilla" /> control that created this selection.</param>
-        /// <param name="index">The index of this selection within the <see cref="SelectionCollection" /> that created it.</param>
-        public Selection(Scintilla scintilla, int index)
-        {
-            this.scintilla = scintilla;
-            Index = index;
-        }
+        #endregion
     }
 }
